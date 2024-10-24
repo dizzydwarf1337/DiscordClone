@@ -4,7 +4,9 @@ using System.Diagnostics;
 
 namespace DiscordClone.Controllers
 {
-    public class HomeController : Controller
+    [ApiController]
+    [Route("[controller]")]
+    public class BaseController : ControllerBase
     {
 
     }
