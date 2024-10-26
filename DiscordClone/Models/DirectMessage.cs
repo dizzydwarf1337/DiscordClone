@@ -8,7 +8,7 @@ namespace DiscordClone.Models
         //tabela posrednia
         [Key]
         // Unique identifier for the direct message
-        public int DirectMessageId { get; set; }
+        public Guid DirectMessageId { get; set; }
 
         // Content of the direct message
         public string Content { get; set; } = null!;
@@ -21,14 +21,14 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the sender of the direct message
         [ForeignKey("Sender")]
-        public string SenderId { get; set; } = null!;
+        public Guid SenderId { get; set; }
 
         // The user who sent the direct message
         public User Sender { get; set; } = null!;
 
         // Foreign key referencing the receiver of the direct message
         [ForeignKey("Receiver")]
-        public string ReceiverId { get; set; } = null!;
+        public Guid ReceiverId { get; set; }
 
         // The user who received the direct message
         public User Receiver { get; set; } = null!;

@@ -8,7 +8,7 @@ namespace DiscordClone.Models
 
         [Key]
         // Unique identifier for the edit history record
-        public int EditHistoryId { get; set; }
+        public Guid EditHistoryId { get; set; }
 
         // The content of the message before the edit
         public string OldContent { get; set; } = null!;
@@ -18,7 +18,7 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the message that was edited
         [ForeignKey("Message")]
-        public int MessageId { get; set; }
+        public Guid MessageId { get; set; }
 
         // The message that was edited
         public Message Message { get; set; } = null!;

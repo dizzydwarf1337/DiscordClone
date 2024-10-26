@@ -7,7 +7,7 @@ namespace DiscordClone.Models
     {
         [Key]
         // Unique identifier for the attachment
-        public int AttachmentId { get; set; }
+        public Guid AttachmentId { get; set; }
 
         // URL to the attachment (e.g., image, document)
         public string AttachmentUrl { get; set; } = null!;
@@ -17,7 +17,7 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the message to which the attachment belongs
         [ForeignKey("Message")]
-        public int MessageId { get; set; }
+        public Guid MessageId { get; set; }
 
         // The message to which the attachment belongs
         public Message Message { get; set; } = null!;

@@ -2,7 +2,7 @@
 
 namespace DiscordClone.Models
 {
-    public class User : IdentityUser
+    public class User : IdentityUser<Guid>
     {
 
         // URL to the user's avatar image

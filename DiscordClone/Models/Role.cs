@@ -7,7 +7,7 @@ namespace DiscordClone.Models
     {
         [Key]
         // Unique identifier for the role
-        public int RoleId { get; set; }
+        public Guid RoleId { get; set; }
 
         // Name of the role
         public string Name { get; set; } = null!;
@@ -23,7 +23,7 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the server to which the role belongs
         [ForeignKey("Server")]
-        public int ServerId { get; set; }
+        public Guid ServerId { get; set; }
 
         // The server to which the role belongs
         public Server Server { get; set; } = null!;

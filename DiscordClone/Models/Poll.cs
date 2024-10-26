@@ -7,7 +7,7 @@ namespace DiscordClone.Models
     {
         [Key]
         // Unique identifier for the poll
-        public int PollId { get; set; }
+        public Guid PollId { get; set; }
 
         // Question for the poll
         public string Question { get; set; } = null!;
@@ -20,7 +20,7 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the channel in which the poll is conducted
         [ForeignKey("Channel")]
-        public int ChannelId { get; set; }
+        public Guid ChannelId { get; set; }
 
         // The channel in which the poll is conducted
         public Channel Channel { get; set; } = null!;
