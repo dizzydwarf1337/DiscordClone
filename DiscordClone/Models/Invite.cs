@@ -8,7 +8,7 @@ namespace DiscordClone.Models
         //tabela posrednia
         [Key]
         // Unique identifier for the invite
-        public int InviteId { get; set; }
+        public Guid InviteId { get; set; }
 
         // Unique code for the invite
         public string Code { get; set; } = Guid.NewGuid().ToString();
@@ -21,14 +21,14 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the server to which the invite applies
         [ForeignKey("Server")]
-        public int ServerId { get; set; }
+        public Guid ServerId { get; set; }
 
         // The server to which the invite applies
         public Server Server { get; set; } = null!;
 
         // Foreign key referencing the user who created the invite
         [ForeignKey("Inviter")]
-        public string InviterId { get; set; } = null!;
+        public Guid InviterId { get; set; }
 
         // The user who created the invite
         public User Inviter { get; set; } = null!;

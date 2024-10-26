@@ -5,9 +5,9 @@ namespace DiscordClone.Models
 {
     public class Channel
     {
-        [Key]
         // Unique identifier for the channel
-        public int ChannelId { get; set; }
+        [Key]
+        public Guid ChannelId { get; set; }
 
         // Name of the channel
         public string Name { get; set; } = null!;
@@ -23,7 +23,7 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the server to which the channel belongs
         [ForeignKey("Server")]
-        public int ServerId { get; set; }
+        public Guid ServerId { get; set; }
 
         // The server to which the channel belongs
         public Server Server { get; set; } = null!;

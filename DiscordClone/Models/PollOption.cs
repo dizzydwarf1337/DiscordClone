@@ -8,14 +8,14 @@ namespace DiscordClone.Models
         //tabela posrednia
         [Key]
         // Unique identifier for the poll option
-        public int PollOptionId { get; set; }
+        public Guid PollOptionId { get; set; }
 
         // Text of the poll option
         public string OptionText { get; set; } = null!;
 
         // Foreign key referencing the poll to which the option belongs
         [ForeignKey("Poll")]
-        public int PollId { get; set; }
+        public Guid PollId { get; set; }
 
         // The poll to which the option belongs
         public Poll Poll { get; set; } = null!;

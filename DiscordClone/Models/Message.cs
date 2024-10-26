@@ -8,7 +8,7 @@ namespace DiscordClone.Models
     {
         [Key]
         // Unique identifier for the message
-        public int MessageId { get; set; }
+        public Guid MessageId { get; set; }
 
         // Content of the message
         public string Content { get; set; } = null!;
@@ -21,14 +21,14 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the user who sent the message
         [ForeignKey("User")]
-        public string UserId { get; set; } = null!;
+        public Guid UserId { get; set; }
 
         // The user who sent the message
         public User User { get; set; } = null!;
 
         // Foreign key referencing the channel where the message was sent
         [ForeignKey("Channel")]
-        public int ChannelId { get; set; }
+        public Guid ChannelId { get; set; }
 
         // The channel where the message was sent
         public Channel Channel { get; set; } = null!;

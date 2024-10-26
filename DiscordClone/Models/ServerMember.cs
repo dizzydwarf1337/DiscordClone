@@ -8,18 +8,18 @@ namespace DiscordClone.Models
         //tabela posrednia
         [Key]
         // Unique identifier for the server member
-        public int ServerMemberId { get; set; }
+        public Guid ServerMemberId { get; set; }
 
         // Foreign key referencing the server
         [ForeignKey("Server")]
-        public int ServerId { get; set; }
+        public Guid ServerId { get; set; }
 
         // The server to which the member belongs
         public Server Server { get; set; } = null!;
 
         // Foreign key referencing the user
         [ForeignKey("User")]
-        public string UserId { get; set; } = null!;
+        public Guid UserId { get; set; }
 
         // The user who is a member of the server
         public User User { get; set; } = null!;

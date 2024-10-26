@@ -9,7 +9,7 @@ namespace DiscordClone.Models
     {
         [Key]
         // Unique identifier for the server
-        public int ServerId { get; set; }
+        public Guid ServerId { get; set; }
 
         // Name of the server
         public string Name { get; set; } = null!;
@@ -28,11 +28,14 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the owner of the server
         [ForeignKey("Owner")]
-        public string OwnerId { get; set; } = null!;
+        public Guid OwnerId { get; set; } 
 
         // Owner of the server
         public User Owner { get; set; } = null!;
 
+        
+        
+        
         // Collection of channels within the server
         public ICollection<Channel>? Channels { get; set; }
 

@@ -8,7 +8,7 @@ namespace DiscordClone.Models
         //tabela posrednia
         [Key]
         // Unique identifier for the voice session
-        public int SessionId { get; set; }
+        public Guid SessionId { get; set; }
 
         // Date when the user joined the voice session
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
@@ -18,14 +18,14 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the channel in which the voice session took place
         [ForeignKey("Channel")]
-        public int ChannelId { get; set; }
+        public Guid ChannelId { get; set; }
 
         // The channel in which the voice session took place
         public Channel Channel { get; set; } = null!;
 
         // Foreign key referencing the user participating in the voice session
         [ForeignKey("User")]
-        public string UserId { get; set; } = null!;
+        public Guid UserId { get; set; } 
 
         // The user participating in the voice session
         public User User { get; set; } = null!;

@@ -8,7 +8,7 @@ namespace DiscordClone.Models
         //tabela posrednia
         [Key]
         // Unique identifier for the server ban
-        public int BanId { get; set; }
+        public Guid BanId { get; set; }
 
         // Date when the user was banned
         public DateTime BannedAt { get; set; } = DateTime.UtcNow;
@@ -18,14 +18,14 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the server from which the user is banned
         [ForeignKey("Server")]
-        public int ServerId { get; set; }
+        public Guid ServerId { get; set; }
 
         // The server from which the user is banned
         public Server Server { get; set; } = null!;
 
         // Foreign key referencing the banned user
         [ForeignKey("User")]
-        public string UserId { get; set; } = null!;
+        public Guid UserId { get; set; }
 
         // The user who is banned
         public User User { get; set; } = null!;
