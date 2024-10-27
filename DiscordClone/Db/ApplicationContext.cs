@@ -29,6 +29,8 @@ namespace DiscordClone.Db
         public DbSet<MessageEditHistory> messageEditHistories { get; set; }
         public DbSet<Attachment> Attachments { get; set; }
 
+        public DbSet<PinnedMessage> PinnedMessages { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
