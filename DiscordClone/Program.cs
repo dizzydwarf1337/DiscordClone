@@ -18,6 +18,8 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => options.SignIn
         .AddDefaultTokenProviders();
 var app = builder.Build();
 
+builder.Services.AddSignalR();
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

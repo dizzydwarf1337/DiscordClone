@@ -26,6 +26,7 @@
   <ItemGroup>
     <Folder Include="client-app\src\features\" />
     <Folder Include="Views\" />
+    <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
 </Project>
