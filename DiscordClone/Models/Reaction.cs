@@ -10,6 +10,8 @@ namespace DiscordClone.Models
         public Guid ReactionId { get; set; }
 
         // Type of the reaction (e.g., 👍, ❤️)
+        [Required(ErrorMessage = "Reaction type is required.")]
+        [StringLength(10, ErrorMessage = "Reaction type cannot exceed 10 characters.")]
         public string ReactionType { get; set; } = null!;
 
         // Date when the reaction was created
