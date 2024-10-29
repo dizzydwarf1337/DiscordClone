@@ -10,9 +10,11 @@ namespace DiscordClone.Models
         public Guid AttachmentId { get; set; }
 
         // URL to the attachment (e.g., image, document)
+        [Url(ErrorMessage = "Please enter a valid URL.")]
         public string AttachmentUrl { get; set; } = null!;
 
         // Type of the attachment (e.g., "image", "document")
+        [StringLength(50, ErrorMessage = "Attachment type cannot exceed 50 characters.")]
         public string AttachmentType { get; set; } = null!;
 
         // Foreign key referencing the message to which the attachment belongs

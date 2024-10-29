@@ -10,6 +10,8 @@ namespace DiscordClone.Models
         public Guid PollId { get; set; }
 
         // Question for the poll
+        [Required(ErrorMessage = "The poll question is required.")]
+        [StringLength(500, ErrorMessage = "The poll question cannot exceed 500 characters.")]
         public string Question { get; set; } = null!;
 
         // Date when the poll was created

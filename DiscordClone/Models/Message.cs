@@ -11,6 +11,7 @@ namespace DiscordClone.Models
         public Guid MessageId { get; set; }
 
         // Content of the message
+        [StringLength(2000, ErrorMessage = "Message content cannot exceed 2000 characters.")]
         public string Content { get; set; } = null!;
 
         // Date when the message was created

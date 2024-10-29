@@ -11,6 +11,8 @@ namespace DiscordClone.Models
         public Guid PollOptionId { get; set; }
 
         // Text of the poll option
+        [Required(ErrorMessage = "Option text is required.")]
+        [StringLength(200, ErrorMessage = "Option text cannot exceed 200 characters.")]
         public string OptionText { get; set; } = null!;
 
         // Foreign key referencing the poll to which the option belongs

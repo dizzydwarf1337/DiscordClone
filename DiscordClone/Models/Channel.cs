@@ -10,15 +10,18 @@ namespace DiscordClone.Models
         public Guid ChannelId { get; set; }
 
         // Name of the channel
+        [StringLength(100, ErrorMessage = "Channel name cannot exceed 100 characters.")]
         public string Name { get; set; } = null!;
 
         // Type of the channel (e.g., "text" or "voice")
+        [StringLength(10, ErrorMessage = "Channel type cannot exceed 10 characters.")]
         public string ChannelType { get; set; } = "text";
 
         // Date when the channel was created
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Topic or description of the channel
+        [StringLength(250, ErrorMessage = "Channel topic cannot exceed 250 characters.")]
         public string? Topic { get; set; }
 
         // Foreign key referencing the server to which the channel belongs
