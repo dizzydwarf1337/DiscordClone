@@ -1,8 +1,12 @@
 import { Box, Button, Typography } from '@mui/material';
 import './styles.css'
+import { observer } from 'mobx-react-lite';
 import { Link } from 'react-router-dom';
+import { useStore } from '../stores/store';
 
-export default function HomePage() {
+export default  function HomePage() {
+
+    const { userStore } = useStore();
 
 
 	return (
@@ -18,9 +22,16 @@ export default function HomePage() {
                 top: 0,
             }}>
             <Typography variant="h1" fontStyle="italic">Welcome</Typography>
-            <Link to='/main'>
-                <Button>Go to ...</Button>
-            </Link>
+
+            {userStore.IsLoggedIn ? (
+                <Link to='/main'>
+                    <Button>Go to ...</Button>
+                </Link>
+            ) : (
+                <Link to='/login'>
+                    <Button>Go to ...</Button>
+                </Link>
+            )}
         </Box>
 	)
 }

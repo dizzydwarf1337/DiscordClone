@@ -24,7 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="client-app\src\features\" />
+    <Folder Include="client-app\src\app\API\" />
+    <Folder Include="client-app\src\app\Models\" />
     <Folder Include="Views\" />
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
