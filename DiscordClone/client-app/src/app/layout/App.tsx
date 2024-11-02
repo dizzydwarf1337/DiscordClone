@@ -1,5 +1,7 @@
-import HomePage from './HomePage'
-import NavBar from './NavBar'
+
+import { Box } from '@mui/material';
+import HomePage from './homePage';
+import NavBar from './navBar';
 import SideBar from './sideBar'
 import './styles.css'
 import { Outlet, useLocation } from 'react-router-dom'
@@ -12,9 +14,14 @@ return (
     <>
         {location.pathname === '/' ? <HomePage /> : (
             <>
-                <NavBar />
-                <SideBar />
-                <Outlet />
+                {location.pathname !== '/login' ? (
+                    <>
+                        <NavBar />
+                        <SideBar />
+                    </>
+                ) : (
+                    <Outlet />
+                )}
             </>
         )}
     </>
