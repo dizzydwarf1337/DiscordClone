@@ -27,36 +27,36 @@ namespace DiscordClone.Controllers
         }
 
         // GET: api/messages/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Message>> GetMessage(Guid id)
-        {
-            var message = await _context.Messages
-                .Include(m => m.User)
-                .Include(m => m.Channel)
-                .FindAsync(id);
+        //[HttpGet("{id}")]
+        //public async Task<ActionResult<Message>> GetMessage(Guid id)
+        //{
+        //    var message = await _context.Messages
+        //        .Include(m => m.User)
+        //        .Include(m => m.Channel)
+        //        .FindAsync(id);
 
-            if (message == null)
-            {
-                return NotFound();
-            }
+        //    if (message == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            return message;
-        }
+        //    return message;
+        //}
 
         // POST: api/messages
-        [HttpPost]
-        public async Task<ActionResult<Message>> PostMessage(Message message)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+        //[HttpPost]
+        //public async Task<ActionResult<Message>> PostMessage(Message message)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return BadRequest(ModelState);
+        //    }
 
-            _context.Messages.Add(message);
-            await _context.SaveChangesAsync();
+        //    _context.Messages.Add(message);
+        //    await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetMessage), new { id = message.MessageId }, message);
-        }
+        //    return CreatedAtAction(nameof(GetMessage), new { id = message.MessageId }, message);
+        //}
 
         // PUT: api/messages/{id}
         [HttpPut("{id}")]
