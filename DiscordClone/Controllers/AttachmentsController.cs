@@ -1,5 +1,5 @@
 ﻿using DiscordClone.Models;
-using DiscordClone.Db; 
+using DiscordClone.Db;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,8 +11,8 @@ using System.Threading.Tasks;
 public class AttachmentsController : ControllerBase
 {
     private const long MaxFileSize = 5 * 1024 * 1024; // 5 MB limit
-    private const string UploadsFolder = "wwwroot/uploads"; 
-    private readonly ApplicationContext _context; 
+    private const string UploadsFolder = "wwwroot/uploads";
+    private readonly ApplicationContext _context;
 
     public AttachmentsController(ApplicationContext context)
     {
@@ -80,6 +80,6 @@ public class AttachmentsController : ControllerBase
             return AttachmentTypeEnum.Document;
 
         // Add other content
-        return AttachmentTypeEnum.Unknown; 
+        return AttachmentTypeEnum.Unknown;
     }
 }
