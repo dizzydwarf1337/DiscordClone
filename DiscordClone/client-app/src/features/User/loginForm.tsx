@@ -4,11 +4,13 @@ import { Form } from "react-router-dom";
 export default function LoginForm() {
     return (
         <>
-            <Box sx={{ mr:"20px", display:"flex", flexDirection:"column", justifyContent:"center", justifyItems:"center", alignItems:"center" } }>
+            <Box sx={{  display:"flex", flexDirection:"column", justifyContent:"center", justifyItems:"center", alignItems:"center" } }>
                 <Form>
-                    <TextField color="black" label="Email" sx={{ m: "10px 25px" }}></TextField>
-                    <TextField color="black" label="Password" sx={{ m: "10px 25px" }}></TextField>
-                    <Box display="flex" justifyContent="Center" mt="50px">
+                    <Box display="flex" justifyContent="center" flexDirection="column"> 
+                        <TextField color="black" label="Email" sx={{ m: "10px 25px" }}></TextField>
+                        <TextField color="black" label="Password" sx={{ m: "10px 25px" }}></TextField>
+                    </Box>
+                    <Box display="flex" justifyContent="Center" mt="10px" mb="10px">
                         <Button >Login</Button>
                     </Box>
                 </Form>
