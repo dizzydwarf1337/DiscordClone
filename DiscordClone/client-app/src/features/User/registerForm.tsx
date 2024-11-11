@@ -1,21 +1,103 @@
 import { Box, TextField, Button } from "@mui/material";
 import { Form } from "react-router-dom";
+import { useState } from "react";
+import agent from "../../app/API/agent";
+import RegisterModel from "../../app/Models/RegisterModel";
 
 export default function RegisterForm() {
+    const [formData, setFormData] = useState({
+        email: '',
+        username: '',
+        password: '',
+        confirmPassword: '',
+    });
+
+    const [error, setError] = useState('');
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
+    };
+
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (formData.password !== formData.confirmPassword) {
+            setError("Passwords do not match.");
+            return;
+        }
+        setError(""); // Clear error if passwords match
+
+        // Correctly initialize the registerModel
+        let registerModel: RegisterModel = {
+            email: formData.email,
+            password: formData.password,
+            username: formData.username
+        };
+
+        agent.Users.createUser(registerModel)
+            .then(() => {
+                // Handle successful registration (e.g., redirect or show message)
+                console.log("User registered successfully");
+            })
+            .catch((err) => {
+                // Handle error during registration
+                console.error("Error during registration:", err);
+            });
+
+        console.log("Form submitted", formData);
+    };
+
     return (
-        <>
-            <Box sx={{ mr: "20px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                <Form>
-                    <Box display="flex" justifyContent="center" flexDirection="column"> 
-                        <TextField color="black" label="Email" sx={{ m:"10px 25px" }} /> 
-                        <TextField color="black" label="Password" sx={{ m: "10px 25px" }} />
-                        <TextField color="black" label="Confirm Password" sx={{ m: "10px 25px" }} />
-                    </Box > 
-                    <Box display="flex" justifyContent="Center" mt="10px" mb="10px">
-                        <Button >Register</Button>
+        <Box sx={{ mr: "20px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+            <Form onSubmit={handleSubmit}>
+                <Box display="flex" justifyContent="center" flexDirection="column">
+                    <TextField
+                        color="black"
+                        label="Email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        sx={{ m: "10px 25px" }}
+                    />
+                    <TextField
+                        color="black"
+                        label="UserName"
+                        name="username"
+                        value={formData.username} 
+                        onChange={handleInputChange}
+                        sx={{ m: "10px 25px" }}
+                    />
+                    <TextField
+                        color="black"
+                        label="Password"
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        sx={{ m: "10px 25px" }}
+                    />
+                    <TextField
+                        color="black"
+                        label="Confirm Password"
+                        type="password"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        sx={{ m: "10px 25px" }}
+                    />
+                </Box>
+                {error && (
+                    <Box sx={{ color: 'red', textAlign: 'center', mb: 2 }}>
+                        {error}
                     </Box>
-                </Form>
-            </Box>
-        </>
-    )
+                )}
+                <Box display="flex" justifyContent="Center" mt="10px" mb="10px">
+                    <Button type="submit">Register</Button>
+                </Box>
+            </Form>
+        </Box>
+    );
 }

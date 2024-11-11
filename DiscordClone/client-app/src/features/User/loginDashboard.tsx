@@ -2,12 +2,20 @@ import { Box, Button, ButtonGroup, Typography } from "@mui/material";
 import LoginForm from "./loginForm";
 import RegisterForm from "./registerForm";
 import { observer } from "mobx-react-lite";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useStore } from "../../app/stores/store";
+import { useNavigate } from "react-router-dom";
 
 export default observer(function LoginDashboard() {
     const [login, setLogin] = useState(true);
     const [LoginRegister, setLoginRegister] = useState(true);
-
+    const { userStore } = useStore();
+    const navigate = useNavigate();
+    useEffect(() => {
+        if (userStore.getLoggedIn()) {
+            navigate("/main");
+        }
+    }, [navigate, userStore]);
     return (
         <Box
             display="flex"
@@ -18,7 +26,6 @@ export default observer(function LoginDashboard() {
             sx={{
                 background: "linear-gradient(135deg, #232526, #414345)",
                 color: "white",
-
             }}
         >
             <Box
@@ -33,7 +40,6 @@ export default observer(function LoginDashboard() {
                     padding: "40px 30px",
                     width: "350px",
                     maxWidth: "90%",
-                  
                 }}
             >
                 <Typography variant="h4" sx={{ mb: 4, color: "#E0E0E0", fontWeight: "bold" }}>
@@ -58,7 +64,7 @@ export default observer(function LoginDashboard() {
                             color: !login ? "white" : "#ddd",
                             fontWeight: "bold",
                             textTransform: "uppercase",
-                            border:"none",
+                            border: "none",
                             transition: "all 0.3s",
                             '&:hover': {
                                 backgroundColor: login ? "#1565c0" : "rgba(255, 255, 255, 0.3)",
@@ -80,7 +86,7 @@ export default observer(function LoginDashboard() {
                             color: login ? "white" : "#ddd",
                             fontWeight: "bold",
                             textTransform: "uppercase",
-                            border:"none",
+                            border: "none",
                             transition: "all 0.3s",
                             '&:hover': {
                                 backgroundColor: !login ? "#1565c0" : "rgba(255, 255, 255, 0.3)",

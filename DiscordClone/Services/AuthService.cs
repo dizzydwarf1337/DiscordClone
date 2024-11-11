@@ -28,7 +28,9 @@ namespace DiscordClone.Services
             // List of claims for the user, including user ID and username
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // Claim for the user's unique identifier
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Claim for the user's unique identifier
+                  new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                 new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString(), ClaimValueTypes.DateTime),
                 new Claim(ClaimTypes.Name, user.UserName)  // Claim for the user's username
             };
 
@@ -49,6 +51,8 @@ namespace DiscordClone.Services
             {
                 Subject = new ClaimsIdentity(claims), // Set the claims for the token
                 Expires = DateTime.Now.AddDays(1), // Set the token expiration time (1 day)
+                Issuer = _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"],
                 SigningCredentials = creds // Set the signing credentials for the token
             };
 

@@ -23,13 +23,13 @@ export default  function HomePage() {
             }}>
             <Typography variant="h1" fontStyle="italic">Welcome</Typography>
 
-            {userStore.IsLoggedIn ? (
+            {userStore.isLoggedIn ? (
                 <Link to='/main'>
-                    <Button>Go to ...</Button>
+                    <Button>Go to Main</Button>
                 </Link>
             ) : (
                 <Link to='/login'>
-                    <Button>Go to ...</Button>
+                    <Button>Go to Login</Button>
                 </Link>
             )}
         </Box>

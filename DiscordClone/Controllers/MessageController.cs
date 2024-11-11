@@ -30,10 +30,10 @@ namespace DiscordClone.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Message>> GetMessage(Guid id)
         {
-            var message = await _context.Messages
+            var message = await _context.Messages 
                 .Include(m => m.User)
                 .Include(m => m.Channel)
-                .FindAsync(id);
+                .FirstOrDefaultAsync(m=>m.MessageId==id);
 
             if (message == null)
             {

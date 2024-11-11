@@ -2,6 +2,8 @@ import axios, { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { store } from '../stores/store';
 import { LoginModel } from '../Models/LoginModel';
 import { User } from '../Models/user';
+import ApiResponseModel from '../Models/ApiResponseModel';
+import RegisterModel from '../Models/RegisterModel';
 
 
 axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -33,15 +35,16 @@ const requests = {
 
 
 const Auth = {
-    login: (loginModel: LoginModel, noAuth = false) => requests.post<LoginModel>('/auth/login', loginModel, noAuth),
-    logout: (email: string, noAuth = false) => requests.post<void>('/auth/logout', { email }, noAuth),
+    login: (loginModel: LoginModel, noAuth = false) => requests.post<ApiResponseModel>('/auth/login', loginModel, noAuth),
+    logout: ( noAuth = false) => requests.post<void>('/auth/logout', noAuth),
 };
 const Users = {
-    getUserById: (id: string, noAuth = false) => requests.get<User>(`/user/${id}`, noAuth),
-    getUserByEmail: (email: string) => requests.post<User>('/user/email/', { email }),
-    createUser: (user: User) => requests.post<LoginModel>('/user', user),
-    updateUser: (user: User) => requests.put<void>(`/user/${user.id}`, user),
-    changePassword: (id: string, password: string) => requests.put<void>(`/user/password/${id}`, password),
+    getUserById: (id: string, noAuth = false) => requests.get<ApiResponseModel>(`/user/${id}`, noAuth),
+    getUserByUserName: (userName: string) => requests.post<ApiResponseModel>('/user/userName/', {userName}),
+    createUser: (user: RegisterModel) => requests.post<ApiResponseModel>('/user/createUser', user),
+    deleteUser: (id: string) => requests.delete<ApiResponseModel>(`/user/${id}`),
+    updateUser: (user: User) => requests.put<ApiResponseModel>(`/user/${user.id}`, user),
+    
 }
 const agent = {
     Auth,

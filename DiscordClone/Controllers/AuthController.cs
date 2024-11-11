@@ -4,6 +4,11 @@ using DiscordClone.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SQLitePCL;
+using System.Runtime.CompilerServices;
+using DiscordClone.Db;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace DiscordClone.Controllers
 {
@@ -21,15 +26,17 @@ namespace DiscordClone.Controllers
         private readonly ILogger<AuthController> _logger;
         // AuthService handles JWT token generation.
         private readonly IAuthService _authService;
+        private readonly ApplicationContext _context;
 
         // Constructor for dependency injection
-        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration, ILogger<AuthController> logger, IAuthService authService)
+        public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration, ILogger<AuthController> logger, IAuthService authService, ApplicationContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuration;
             _logger = logger;
             _authService = authService;
+            _context = context;
         }
 
         [HttpPost("login")]
@@ -60,9 +67,32 @@ namespace DiscordClone.Controllers
                     return Unauthorized(new ApiResponse(false, "Invalid credentials."));
                 }
 
-                // Generate JWT token for authenticated user
-                var token = await _authService.GenerateJwtTokenAsync(user);
-                _logger.LogInformation("JWT token generated successfully for user {Username}", loginDto.Username);
+                // Check if the user already has a valid token in the database
+                var existingToken = _context.UserTokens.FirstOrDefault(t => t.UserId == user.Id && t.LoginProvider == "Jwt" && t.Name == "Bearer");
+
+                string token;
+                if (existingToken != null) // Token exists, return it
+                {
+                    token = existingToken.Value;
+                    _logger.LogInformation("Found existing token for user {Username}", loginDto.Username);
+                }
+                else // Token doesn't exist, generate a new one
+                {
+                    token = await _authService.GenerateJwtTokenAsync(user);
+                    _logger.LogInformation("JWT token generated successfully for user {Username}", loginDto.Username);
+
+                    // Save the new token in the database
+                    _context.UserTokens.Add(new IdentityUserToken<Guid>
+                    {
+                        UserId = user.Id,
+                        LoginProvider = "Jwt",
+                        Name = "Bearer",
+                        Value = token
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
+                // Return the token in the response
                 return Ok(new ApiResponse(true, "Login successful", new { token }));
             }
             catch (Exception ex) // Handle any exceptions
@@ -78,10 +108,25 @@ namespace DiscordClone.Controllers
         {
             try
             {
-                // Sign out the user
-                await _signInManager.SignOutAsync();
-                _logger.LogInformation("User logged out successfully.");
-                return Ok(new ApiResponse(true, "Successfully logged out."));
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get the user ID from the JWT token
+
+                // Remove the token from the database
+                var token = await _context.UserTokens
+                    .FirstOrDefaultAsync(t => t.UserId == Guid.Parse(userId) && t.LoginProvider == "Jwt" && t.Name == "Bearer");
+
+                if (token != null)
+                {
+                    _context.UserTokens.Remove(token);
+                    await _context.SaveChangesAsync();
+                    await _signInManager.SignOutAsync();
+                    _logger.LogInformation("User logged out successfully.");
+                    return Ok(new ApiResponse(true, "Successfully logged out."));
+                }
+                else
+                {
+                    return Ok(new ApiResponse(true, "User is already logged out."));
+                }
+
             }
             catch (Exception ex) // Handle any exceptions
             {

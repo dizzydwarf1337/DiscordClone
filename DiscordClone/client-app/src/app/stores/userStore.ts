@@ -1,5 +1,7 @@
 import { makeAutoObservable } from "mobx";
 import { User } from "../Models/user";
+import agent from "../API/agent";
+import { useNavigate } from "react-router-dom";
 
 
 export default class UserStore {
@@ -38,5 +40,23 @@ export default class UserStore {
         this.isLoggedIn = value;
     }
     getLoggedIn = () => this.isLoggedIn;
+    LogOut = async () => {
+        try {
+            this.setLoading(true);
+            await agent.Auth.logout();
+            localStorage.removeItem("isLoggedIn");
+            localStorage.removeItem("user");
+            this.setLoggedIn(false);
+            this.setToken(null);
+            this.setUser(null);
+            
+        }
+        catch (error) {
+            console.error(error);
+        }
+        finally {
+            this.setLoading(false);
+        }
+    }
 
 }

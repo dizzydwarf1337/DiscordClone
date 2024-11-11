@@ -6,12 +6,13 @@ using Microsoft.Extensions.Logging;
 using DiscordClone.Models.Dtos;
 using System.Web;
 using System.Configuration;
+using DiscordClone.Db;
+using Microsoft.EntityFrameworkCore;
 
 namespace DiscordClone.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")]  // Only Admins can manage users
     public class UserController : ControllerBase
     {
         // UserManager is used to manage user-related actions like creating, finding users, etc.
@@ -20,13 +21,15 @@ namespace DiscordClone.Controllers
         private readonly ILogger<UserController> _logger;
         // Configuration is used to access app settings.
         private readonly IConfiguration _configuration;
+        private readonly ApplicationContext _context;
 
         // Constructor for dependency injection
-        public UserController(UserManager<User> userManager, ILogger<UserController> logger, IConfiguration configuration)
+        public UserController(UserManager<User> userManager, ILogger<UserController> logger, IConfiguration configuration, ApplicationContext context)
         {
             _userManager = userManager;
             _logger = logger;
             _configuration = configuration;
+            _context = context;
         }
 
         // Endpoint to create a new user
@@ -71,6 +74,19 @@ namespace DiscordClone.Controllers
             catch (Exception ex) // Handle any exceptions that occur during user creation
             {
                 _logger.LogError(ex, "An error occurred while creating user {Username}", registerDto.Username);
+                return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("username")]
+        public async Task<IActionResult> GetUserByUserName([FromBody] UserNameDto userName)
+        {
+            try {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName.UserName);
+                return Ok(new ApiResponse(true, "User found successfully", new UserDto { Email = user.Email, Id = user.Id.ToString(), Username = user.UserName }));
+            }
+            catch (Exception e)
+            {
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
             }
         }
@@ -170,6 +186,7 @@ namespace DiscordClone.Controllers
         }
 
         // Endpoint to delete a user by ID
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
