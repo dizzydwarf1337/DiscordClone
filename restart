@@ -1,0 +1,29 @@
+* [33m4033685[m[33m ([m[1;31morigin/user_auth_controller[m[33m)[m auth i user controller
+*   [33mb1344bd[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mlogin_register_11.11[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m Merge pull request #6 from dizzydwarf1337/Login/RegisterForm
+[32m|[m[33m\[m  
+[32m|[m * [33mfad4c53[m[33m ([m[1;31morigin/Login/RegisterForm[m[33m)[m Login/register form added
+* [33m|[m   [33m6176f8b[m Merge pull request #5 from dizzydwarf1337/modele
+[34m|[m[35m\[m [33m\[m  
+[34m|[m * [33m|[m [33m1434051[m[33m ([m[1;31morigin/modele[m[33m)[m data annotations
+[34m|[m[34m/[m [33m/[m  
+* [33m|[m   [33mb9793e2[m Merge pull request #4 from dizzydwarf1337/modele_27.10
+[33m|[m[1;31m\[m [33m\[m  
+[33m|[m [1;31m|[m[33m/[m  
+[33m|[m[33m/[m[1;31m|[m   
+[33m|[m * [33m79fe551[m[33m ([m[1;31morigin/modele_27.10[m[33m)[m attachment i message
+[33m|[m * [33m483e635[m test
+[33m|[m[33m/[m  
+*   [33m2e2b339[m Merge pull request #3 from dizzydwarf1337/models_changes
+[1;32m|[m[1;33m\[m  
+[1;32m|[m * [33m76eb58d[m[33m ([m[1;31morigin/models_changes[m[33m)[m DataBase init complete
+* [1;33m|[m [33m371d417[m Merge pull request #2 from dizzydwarf1337/modele_26.10
+[1;34m|[m[1;33m\[m[1;33m|[m 
+[1;34m|[m * [33m327b864[m[33m ([m[1;31morigin/modele_26.10[m[33m)[m dodane przykladowe modele
+[1;34m|[m[1;34m/[m  
+*   [33m462a47b[m Merge pull request #1 from dizzydwarf1337/client-app
+[1;36m|[m[31m\[m  
+[1;36m|[m * [33m4f4c90c[m[33m ([m[1;31morigin/client-app[m[33m)[m Minor changes
+[1;36m|[m[1;36m/[m  
+* [33maae9ec1[m Init
+* [33m94f08a1[m Добавьте файлы проекта.
+* [33m1a985de[m Добавить .gitattributes и .gitignore.
