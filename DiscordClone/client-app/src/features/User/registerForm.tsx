@@ -6,10 +6,12 @@ export default function RegisterForm() {
         <>
             <Box sx={{ mr: "20px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
                 <Form>
-                    <TextField color="black" label="Email" sx={{ m:"10px 25px" }} /> 
-                    <TextField color="black" label="Password" sx={{ m: "10px 25px" }} />
-                    <TextField color="black" label="Confirm Password" sx={{ m: "10px 25px" }} />
-                    <Box display="flex" justifyContent="Center" mt="20px">
+                    <Box display="flex" justifyContent="center" flexDirection="column"> 
+                        <TextField color="black" label="Email" sx={{ m:"10px 25px" }} /> 
+                        <TextField color="black" label="Password" sx={{ m: "10px 25px" }} />
+                        <TextField color="black" label="Confirm Password" sx={{ m: "10px 25px" }} />
+                    </Box > 
+                    <Box display="flex" justifyContent="Center" mt="10px" mb="10px">
                         <Button >Register</Button>
                     </Box>
                 </Form>
