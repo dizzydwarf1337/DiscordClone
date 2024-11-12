@@ -44,7 +44,7 @@ export default function LoginForm() {
                     </Box>
                     <Typography color="red" textAlign="center">{error}</Typography>
                     <Box display="flex" justifyContent="Center" mt="10px" mb="10px">
-                        <Button type="submit">Login</Button>
+                        <Button    type="submit">Login</Button>
                     </Box>
                 </Form>
             </Box>

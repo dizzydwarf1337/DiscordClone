@@ -78,13 +78,13 @@ export default class UserStore {
                     this.setToken(LoginResponse.data.token);
                     return true;
                 }
-                else return UserResponse.message;
+                else return UserResponse.data.message;
             }
-            else return LoginResponse.message;
+            else return LoginResponse.data.message;
         }
         catch (error: Error) {
             console.error("Error during login",error);
-            return error.message; 
+            return error.response.data.message; 
         }
         finally {
             this.setLoading(false);

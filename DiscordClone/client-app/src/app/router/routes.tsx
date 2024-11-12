@@ -3,6 +3,7 @@ import App from "../layout/App";
 import HomePage from "../layout/HomePage";
 import LoginDashboard from "../../features/User/loginDashboard";
 import AdminPanel from "../../features/Admin/AdminPanel";
+import AdminDashboard from "../../features/Admin/AdminDashboard";
 
 
 export const routes: RouteObject[] = [

@@ -43,7 +43,7 @@ export default observer(function LoginDashboard() {
                 }}
             >
                 <Typography variant="h4" sx={{ mb: 4, color: "#E0E0E0", fontWeight: "bold" }}>
-                    {login ? "Welcome Back" : "Join Us Today"}
+                    {login ? "Welcome Back!" : "Join Us Today!"}
                 </Typography>
 
                 <ButtonGroup
