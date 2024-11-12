@@ -6,6 +6,8 @@ import SideBar from './sideBar';
 import './styles.css';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AdminPanel from '../../features/Admin/AdminPanel';
+import { ThemeProvider } from '@emotion/react';
+import theme from '../theme/theme';
 
 function App() {
 
@@ -20,6 +22,7 @@ function App() {
     }, [location.pathname, userStore, navigate]);
 
     return (
+        <ThemeProvider theme={theme}>
         <>
             {location.pathname === '/' ? <HomePage /> : (
                 <>
@@ -40,7 +43,8 @@ function App() {
                     )}
                 </>
             )}
-        </>
+            </>
+        </ThemeProvider>
     );
 }
 

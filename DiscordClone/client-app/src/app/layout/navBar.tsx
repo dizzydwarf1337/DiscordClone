@@ -15,7 +15,7 @@ export default function NavBar() {
         <>
             <AppBar sx={{ backgroundColor: "#3C3C3C", zIndex: 3, pl: "50px" }}>
                 <Toolbar sx={{ justifyContent: "space-between" }}>
-                    <Box className="leftSideNavBox">
+                    <Box display="flex" justifyContent="right">
                         <Typography>Discord Clone</Typography>
                     </Box>
 
@@ -23,15 +23,12 @@ export default function NavBar() {
 
                     {userStore.getUser() && (
                         <Box display="flex" justifyContent="right" alignItems="center" gap="20px">
-                            <Typography className="navLink" variant="subtitle1" component="a" href="/profile" >
+                            <Button variant="contained">
                                 Profile
-                            </Typography>
+                            </Button>
                             <Button
                                 onClick={handleOnClick}
-                                className="navLink"
                                 variant="contained"
-                                border="none"
-                                color="black"
                                 disabled={userStore.getLoading()}
                                 startIcon={userStore.getLoading() ? <CircularProgress size={16} /> : null}
                             >

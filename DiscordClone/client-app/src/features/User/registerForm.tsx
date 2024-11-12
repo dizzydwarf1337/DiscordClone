@@ -28,7 +28,7 @@ export default function RegisterForm() {
             setError("Passwords do not match.");
             return;
         }
-        setError(""); // Clear error if passwords match
+        setError(""); 
 
         let registerModel: RegisterModel = {
             email: formData.email,
@@ -38,12 +38,11 @@ export default function RegisterForm() {
 
         agent.Users.createUser(registerModel)
             .then(() => {
-                // Handle successful registration (e.g., redirect or show message)
                 console.log("User registered successfully");
             })
             .catch((err) => {
-                // Handle error during registration
                 console.error("Error during registration:", err);
+                setError(err.response.data.title);
             });
 
     };

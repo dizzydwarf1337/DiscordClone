@@ -2,7 +2,8 @@ import { Outlet, useNavigate } from "react-router-dom";
 import AdminNav from "./AdminNav";
 import { useStore } from "../../app/stores/store";
 import { useEffect } from "react";
-import { CircularProgress } from "@mui/material";
+import { CircularProgress, ThemeProvider } from "@mui/material";
+import theme from "../../app/theme/theme";
 
 
 
@@ -18,8 +19,10 @@ export default function AdminPanel() {
     if (!userStore.user) return <CircularProgress />
     return (
         <>
-            <AdminNav />
-            <Outlet/>
+            <ThemeProvider theme={theme}>
+                <AdminNav />
+                <Outlet />
+            </ThemeProvider>
         </>
     )
 }
