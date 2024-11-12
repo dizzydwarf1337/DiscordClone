@@ -1,11 +1,8 @@
 
 export interface User {
     id: string;
+    username: string;
     email: string;
-    avatarUrl: string | null;
     role: string;
-    password?: string;
-    createdAt: Date;
-    bio: string | null;
-    isOnline: boolean;
+    
 }

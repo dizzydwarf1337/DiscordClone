@@ -1,7 +1,8 @@
 import { makeAutoObservable } from "mobx";
 import { User } from "../Models/user";
 import agent from "../API/agent";
-import { useNavigate } from "react-router-dom";
+import { LoginModel } from "../Models/LoginModel";
+import ApiResponseModel from "../Models/ApiResponseModel";
 
 
 export default class UserStore {
@@ -31,15 +32,17 @@ export default class UserStore {
     }
     getLoading = () => this.loading;
 
-    setUser = (user: User | null) => {
+    setUser = (user: User ) => {
         this.user = user;
     }
     getUser = () => this.user;
-
+    deleteUser = () => this.user = null;
     setLoggedIn = (value: boolean) => {
         this.isLoggedIn = value;
     }
     getLoggedIn = () => this.isLoggedIn;
+
+
     LogOut = async () => {
         try {
             this.setLoading(true);
@@ -48,11 +51,40 @@ export default class UserStore {
             localStorage.removeItem("user");
             this.setLoggedIn(false);
             this.setToken(null);
-            this.setUser(null);
+            this.deleteUser();
             
         }
         catch (error) {
             console.error(error);
+        }
+        finally {
+            this.setLoading(false);
+        }
+    }
+
+    LogIn = async (loginModel: LoginModel) => {
+        this.setLoading(true);
+        try {
+            const LoginResponse : ApiResponseModel = await agent.Auth.login(loginModel);
+            if (LoginResponse.success) {
+                console.log(LoginResponse.data);
+                const UserResponse: ApiResponseModel = await agent.Users.getUserByUserName(loginModel.username);
+                if (UserResponse.success) {
+                    localStorage.setItem("isLoggedIn", "true");
+                    localStorage.setItem("user", JSON.stringify(UserResponse.data));
+                    localStorage.setItem("token", LoginResponse.data.token);
+                    this.setUser(UserResponse.data);
+                    this.setLoggedIn(true);
+                    this.setToken(LoginResponse.data.token);
+                    return true;
+                }
+                else return UserResponse.message;
+            }
+            else return LoginResponse.message;
+        }
+        catch (error: Error) {
+            console.error("Error during login",error);
+            return error.message; 
         }
         finally {
             this.setLoading(false);

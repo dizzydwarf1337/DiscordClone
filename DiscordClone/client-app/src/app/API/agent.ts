@@ -40,7 +40,7 @@ const Auth = {
 };
 const Users = {
     getUserById: (id: string, noAuth = false) => requests.get<ApiResponseModel>(`/user/${id}`, noAuth),
-    getUserByUserName: (userName: string) => requests.post<ApiResponseModel>('/user/userName/', {userName}),
+    getUserByUserName: (userName: Object) => requests.post<ApiResponseModel>('/user/userName/', { userName }),
     createUser: (user: RegisterModel) => requests.post<ApiResponseModel>('/user/createUser', user),
     deleteUser: (id: string) => requests.delete<ApiResponseModel>(`/user/${id}`),
     updateUser: (user: User) => requests.put<ApiResponseModel>(`/user/${user.id}`, user),

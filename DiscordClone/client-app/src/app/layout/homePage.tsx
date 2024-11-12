@@ -1,6 +1,5 @@
 import { Box, Button, Typography } from '@mui/material';
 import './styles.css'
-import { observer } from 'mobx-react-lite';
 import { Link } from 'react-router-dom';
 import { useStore } from '../stores/store';
 

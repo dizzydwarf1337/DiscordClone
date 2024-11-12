@@ -30,7 +30,6 @@ export default function RegisterForm() {
         }
         setError(""); // Clear error if passwords match
 
-        // Correctly initialize the registerModel
         let registerModel: RegisterModel = {
             email: formData.email,
             password: formData.password,
@@ -47,7 +46,6 @@ export default function RegisterForm() {
                 console.error("Error during registration:", err);
             });
 
-        console.log("Form submitted", formData);
     };
 
     return (
@@ -69,6 +67,7 @@ export default function RegisterForm() {
                         value={formData.username} 
                         onChange={handleInputChange}
                         sx={{ m: "10px 25px" }}
+                        autoComplete="username"
                     />
                     <TextField
                         color="black"
@@ -78,6 +77,7 @@ export default function RegisterForm() {
                         value={formData.password}
                         onChange={handleInputChange}
                         sx={{ m: "10px 25px" }}
+                        autoComplete="current-password"
                     />
                     <TextField
                         color="black"
@@ -87,6 +87,7 @@ export default function RegisterForm() {
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
                         sx={{ m: "10px 25px" }}
+                        autoComplete="current-password"
                     />
                 </Box>
                 {error && (

@@ -91,9 +91,9 @@ namespace DiscordClone.Controllers
                     });
                     await _context.SaveChangesAsync();
                 }
-
+                
                 // Return the token in the response
-                return Ok(new ApiResponse(true, "Login successful", new { token }));
+                return Ok(new ApiResponse(true, "Login successful", new { token}));
             }
             catch (Exception ex) // Handle any exceptions
             {

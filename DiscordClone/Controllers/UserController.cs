@@ -81,15 +81,40 @@ namespace DiscordClone.Controllers
         [HttpPost("username")]
         public async Task<IActionResult> GetUserByUserName([FromBody] UserNameDto userName)
         {
-            try {
+            try
+            {
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName.UserName);
-                return Ok(new ApiResponse(true, "User found successfully", new UserDto { Email = user.Email, Id = user.Id.ToString(), Username = user.UserName }));
+                if (user == null)
+                {
+                    return NotFound(new ApiResponse(false, "User not found"));
+                }
+
+                var userRoleRelation = await _context.UserRoles.FirstOrDefaultAsync(r => r.UserId == user.Id);
+                if (userRoleRelation == null)
+                {
+                    return NotFound(new ApiResponse(false, "User role not found"));
+                }
+
+                var userRole = await _context.Roles.FindAsync(userRoleRelation.RoleId);
+                if (userRole == null)
+                {
+                    return NotFound(new ApiResponse(false, "Role not found"));
+                }
+
+                return Ok(new ApiResponse(true, "User found successfully", new UserDto
+                {
+                    Email = user.Email,
+                    Id = user.Id.ToString(),
+                    Username = user.UserName,
+                    Role = userRole.Name
+                }));
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
             }
         }
+
 
         // Endpoint to confirm a user's email address
         [HttpGet("confirmEmail")]
