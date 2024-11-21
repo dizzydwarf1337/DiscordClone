@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useStore } from "../../app/stores/store";
 import { useNavigate } from "react-router-dom";
 
-export default observer(function LoginDashboard() {
+const LoginDashboard = observer(function LoginDashboard() {
     const [login, setLogin] = useState(true);
     const [LoginRegister, setLoginRegister] = useState(true);
     const { userStore } = useStore();
@@ -121,3 +121,4 @@ export default observer(function LoginDashboard() {
         </Box>
     );
 });
+export default LoginDashboard;

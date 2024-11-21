@@ -1,8 +1,9 @@
 import { Box, TextField, Button } from "@mui/material";
-import { Form } from "react-router-dom";
+import { Form, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import agent from "../../app/API/agent";
 import RegisterModel from "../../app/Models/RegisterModel";
+import { useStore } from "../../app/stores/store";
 
 export default function RegisterForm() {
     const [formData, setFormData] = useState({
@@ -13,6 +14,8 @@ export default function RegisterForm() {
     });
 
     const [error, setError] = useState('');
+    const { userStore } = useStore(); 
+    const navigate = useNavigate();
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -39,12 +42,21 @@ export default function RegisterForm() {
         agent.Users.createUser(registerModel)
             .then(() => {
                 console.log("User registered successfully");
+                userStore.LogIn({ username: registerModel.username, password: registerModel.password }).then(response => {
+                    if (response == true) {
+                        if (userStore.user.role === "Admin") {
+                            navigate("/adminPanel");
+                        }
+                        else navigate("/main");
+                    }
+                    else setError(response);
+                });
             })
             .catch((err) => {
                 console.error("Error during registration:", err);
                 setError(err.response.data.title);
             });
-
+       
     };
 
     return (

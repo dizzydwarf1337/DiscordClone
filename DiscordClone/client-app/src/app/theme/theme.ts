@@ -5,7 +5,12 @@ const theme = createTheme({
     palette: {
         mode: 'dark',
         primary: {
-            main: '#ffffff', 
+            main: '#141414',
+            contrastText:"#CCCCCC"
+
+        },
+        secondary: {
+            main:"#141414",
         },
         background: {
             default: '#242424', 
@@ -34,12 +39,13 @@ const theme = createTheme({
                     },
                 },
                 containedPrimary: {
-                    color: "black",
+                    backgroundColor: "primary",
+                    color: "primary.contrastText",
                     width: "100px",
                     borderRadius: "10px",
                     transition:"0.15s",
                     '&:hover': {
-                        backgroundColor: "black",
+                        backgroundColor: "#515151",
                         color: "white",
                     }
                 },
