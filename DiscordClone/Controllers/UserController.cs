@@ -8,6 +8,7 @@ using System.Web;
 using System.Configuration;
 using DiscordClone.Db;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Cors;
 
 namespace DiscordClone.Controllers
 {
@@ -240,6 +241,25 @@ namespace DiscordClone.Controllers
                 _logger.LogError(ex, "An error occurred while deleting user {UserId}", id);
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
             }
+        }
+
+        [HttpPost("upload-avatar")]
+        [EnableCors("CorsPolicy")]
+        public async Task<IActionResult> UploadAvatar(IFormFile avatar)
+        {
+            if (avatar != null && avatar.Length > 0)
+            {
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "avatars", avatar.FileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await avatar.CopyToAsync(stream);
+                }
+
+                return Ok(new { FilePath = "/avatars/" + avatar.FileName });
+            }
+
+            return BadRequest("No file uploaded.");
         }
     }
 }
