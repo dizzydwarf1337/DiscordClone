@@ -28,6 +28,7 @@
     <Folder Include="client-app\src\app\API\" />
     <Folder Include="Views\" />
     <Folder Include="wwwroot\uploads\" />
+    <Folder Include="wwwroot\avatars\" />
   </ItemGroup>
 
 </Project>

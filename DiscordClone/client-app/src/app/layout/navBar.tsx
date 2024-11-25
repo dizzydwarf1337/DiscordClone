@@ -1,7 +1,7 @@
 import { AppBar, Box, Button, CircularProgress, Toolbar, Typography } from "@mui/material";
 import "./styles.css";
 import { useStore } from "../stores/store";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 export default function NavBar() {
 
     const { userStore } = useStore();
@@ -13,7 +13,7 @@ export default function NavBar() {
     }
     return (
         <>
-            <AppBar sx={{ backgroundColor: "#3C3C3C", zIndex: 3, pl: "50px" }}>
+            <AppBar sx={{ backgroundColor: "secondary.main", zIndex: 3, pl: "50px" }}>
                 <Toolbar sx={{ justifyContent: "space-between" }}>
                     <Box display="flex" justifyContent="right">
                         <Typography>Discord Clone</Typography>
@@ -23,10 +23,12 @@ export default function NavBar() {
 
                     {userStore.getUser() && (
                         <Box display="flex" justifyContent="right" alignItems="center" gap="20px">
-                            <Button variant="contained" color="Primary">
-                                Profile
-                            </Button>
-                            <Button
+                            <Link to={"/profile"}>
+                                <Button variant="contained" color="Primary">
+                                    Profile
+                                    </Button>
+                            </Link>
+                                <Button
                                 onClick={handleOnClick}
                                 variant="contained"
                                 color="Primary"
@@ -35,7 +37,7 @@ export default function NavBar() {
                             >
                                 Logout
                             </Button>
-                        </Box>)}
+                    </Box>)}
                 </Toolbar>
             </AppBar>
         </>

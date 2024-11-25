@@ -1,9 +1,10 @@
 import { Box, TextField, Button } from "@mui/material";
 import { Form, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import agent from "../../app/API/agent";
-import RegisterModel from "../../app/Models/RegisterModel";
-import { useStore } from "../../app/stores/store";
+import { useStore } from "../../../app/stores/store";
+import agent from "../../../app/API/agent";
+import RegisterModel from "../../../app/Models/RegisterModel";
+
 
 export default function RegisterForm() {
     const [formData, setFormData] = useState({

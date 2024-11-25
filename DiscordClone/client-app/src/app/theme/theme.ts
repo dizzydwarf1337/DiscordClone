@@ -6,11 +6,12 @@ const theme = createTheme({
         mode: 'dark',
         primary: {
             main: '#141414',
-            contrastText:"#CCCCCC"
+            contrastText: "#CCCCCC",
+            dark:"#0A0A0A",
 
         },
         secondary: {
-            main:"#141414",
+            main:"#3C3C3C",
         },
         background: {
             default: '#242424', 
@@ -49,9 +50,24 @@ const theme = createTheme({
                         color: "white",
                     }
                 },
-                containedSecondary: {
-
-                }
+                outlinedSuccess: {
+                    backgroundColor: "primary.main",
+                    color: "primary.contrastText",
+                    border:"none",
+                    '&:hover': {
+                        backgroundColor: "#409856",
+                        boxShadow: "none",
+                    },
+                },
+                outlinedInherit: {
+                    backgroundColor: "primary.main",
+                    border:"none",
+                    color: "whitesmoke",
+                    '&:hover': {
+                        backgroundColor: 'primary.dark',
+                        boxShadow:"0px 0px 5px 3px grey",
+                    },
+                },
             },
         },
         MuiDrawer: {

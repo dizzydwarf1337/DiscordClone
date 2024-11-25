@@ -35,6 +35,9 @@ export default class UserStore {
     setUser = (user: User ) => {
         this.user = user;
     }
+    setUserPhoto = (photo: string) => {
+        this.user.image = photo;
+    }
     getUser = () => this.user;
     deleteUser = () => this.user = null;
     setLoggedIn = (value: boolean) => {
@@ -90,5 +93,42 @@ export default class UserStore {
             this.setLoading(false);
         }
     }
+    updateUserField = async (data) => {
+        this.setLoading(true);
+        try {
+            let updatedUser: User = {
+                id: this.user.id,
+                username: data.username,
+                email: data.email,
+                image: data.image,
+                role: "user",
+            };
+
+            const response = await agent.Users.updateUser(updatedUser);
+            if (response.success) {
+                this.setUser(updatedUser);
+                localStorage.setItem("user", JSON.stringify(this.user));
+                console.log(response.message);
+            }
+        }
+        catch (error: Error) {
+            console.log("Error while updating user ", error);
+        }
+        finally {
+            this.setLoading(false); 
+        }
+    };
+    updateUserAvatar = async (imageFile: FormData) => {
+        this.setLoading(true);
+        try {
+            const response = await agent.Users.updateAvatar(imageFile);
+            this.setUserPhoto(response.data.avatarUrl);
+            localStorage.setItem("user", JSON.stringify(this.user));
+        } catch (error: Error) {
+            console.error("Error while updating avatar", error);
+        } finally {
+            this.setLoading(false);
+        }
+    };
 
 }

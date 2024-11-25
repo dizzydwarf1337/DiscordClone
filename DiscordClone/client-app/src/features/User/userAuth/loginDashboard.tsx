@@ -3,8 +3,8 @@ import LoginForm from "./loginForm";
 import RegisterForm from "./registerForm";
 import { observer } from "mobx-react-lite";
 import { useState, useEffect } from "react";
-import { useStore } from "../../app/stores/store";
 import { useNavigate } from "react-router-dom";
+import { useStore } from "../../../app/stores/store";
 
 const LoginDashboard = observer(function LoginDashboard() {
     const [login, setLogin] = useState(true);

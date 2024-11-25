@@ -106,7 +106,8 @@ namespace DiscordClone.Controllers
                     Email = user.Email,
                     Id = user.Id.ToString(),
                     Username = user.UserName,
-                    Role = userRole.Name
+                    Role = userRole.Name,
+                    Image = user.AvatarUrl
                 }));
             }
             catch (Exception)
@@ -171,8 +172,9 @@ namespace DiscordClone.Controllers
 
         // Endpoint to update user details
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDto updateUserDto)
+        public async Task<IActionResult> UpdateUser( [FromBody] UserDto updateUserDto)
         {
+            var id = updateUserDto.Id;
             // Check if the input model is valid
             if (!ModelState.IsValid)
             {
@@ -239,6 +241,48 @@ namespace DiscordClone.Controllers
             {
                 _logger.LogError(ex, "An error occurred while deleting user {UserId}", id);
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("update-avatar")]
+        [Authorize] // Make sure only authenticated users can upload avatars
+        public async Task<IActionResult> UpdateAvatar([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new ApiResponse(false, "No file selected."));
+            }
+
+            try
+            {
+                // Logic to save the avatar to storage
+                var user = await _userManager.GetUserAsync(User); // Get current user
+                if (user == null)
+                {
+                    return NotFound(new ApiResponse(false, "User not found"));
+                }
+
+                // Save file logic here (e.g., save to a directory or cloud storage)
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "avatars", fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var avatarUrl = $"{Request.Scheme}://{Request.Host}/avatars/{fileName}"; // Full URL to the avatar
+
+                // Update user with new avatar URL
+                user.AvatarUrl = avatarUrl; // Assuming User model has AvatarUrl property
+                await _userManager.UpdateAsync(user);
+
+                return Ok(new ApiResponse(true, "Avatar updated successfully.", new { avatarUrl }));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating avatar");
+                return StatusCode(500, new ApiResponse(false, "Error updating avatar"));
             }
         }
     }
