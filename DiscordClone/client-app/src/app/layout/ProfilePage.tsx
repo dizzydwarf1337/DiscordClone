@@ -21,15 +21,11 @@ const ProfilePage: React.FC = () => {
             formData.append('file', selectedFile);
 
             try {
-                const response = await userStore.updateAvatar(formData);
-
-                console.log("Avatar update response:", response);
-
-                if (response.success) {
+                const success = await userStore.updateAvatar(selectedFile); // Call updateAvatar directly
+                if (success) {
                     alert("Avatar updated successfully!");
-                    // Zaktualizuj dane u¿ytkownika np. avatarUrl
                 } else {
-                    alert(response?.message || "Failed to update avatar.");
+                    alert("Failed to update avatar.");
                 }
             } catch (error) {
                 console.error("Error during avatar update:", error);
@@ -40,25 +36,33 @@ const ProfilePage: React.FC = () => {
         }
     };
 
-
     return (
-        <div>
-            <h2>Profile</h2>
-            <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-            />
-            <Button
-                variant="contained"
-                color="primary"
-                onClick={handleAvatarUpdate}
-                disabled={isLoading}
-            >
-                {isLoading ? <CircularProgress size={24} /> : "Update Avatar"}
-            </Button>
+        <div className="profil-box-c">
+            <div>
+                <h2>Profile</h2>
+                {/* Display the avatar */}
+                <img
+                    src={userStore.user?.avatarUrl || 'default-avatar.png'} // Display the avatar or a default one
+                    alt="User Avatar"
+                    style={{ width: '100px', height: '100px', borderRadius: '50%' }}
+                />
+                <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                />
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleAvatarUpdate}
+                    disabled={isLoading}
+                >
+                    {isLoading ? <CircularProgress size={24} /> : "Update Avatar"}
+                </Button>
+            </div>
         </div>
     );
 };
+
 
 export default ProfilePage;
