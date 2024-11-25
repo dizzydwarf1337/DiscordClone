@@ -32,7 +32,7 @@ export default class UserStore {
     }
     getLoading = () => this.loading;
 
-    setUser = (user: User ) => {
+    setUser = (user: User) => {
         this.user = user;
     }
     getUser = () => this.user;
@@ -52,7 +52,7 @@ export default class UserStore {
             this.setLoggedIn(false);
             this.setToken(null);
             this.deleteUser();
-            
+
         }
         catch (error) {
             console.error(error);
@@ -65,7 +65,7 @@ export default class UserStore {
     LogIn = async (loginModel: LoginModel) => {
         this.setLoading(true);
         try {
-            const LoginResponse : ApiResponseModel = await agent.Auth.login(loginModel);
+            const LoginResponse: ApiResponseModel = await agent.Auth.login(loginModel);
             if (LoginResponse.success) {
                 console.log(LoginResponse.data);
                 const UserResponse: ApiResponseModel = await agent.Users.getUserByUserName(loginModel.username);
@@ -83,12 +83,43 @@ export default class UserStore {
             else return LoginResponse.data.message;
         }
         catch (error: Error) {
-            console.error("Error during login",error);
-            return error.response.data.message; 
+            console.error("Error during login", error);
+            return error.response.data.message;
         }
         finally {
             this.setLoading(false);
         }
     }
+    updateAvatar = async (file: File): Promise<boolean> => {
+        this.setLoading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await agent.Users.updateAvatar(formData);
+            if (response.success) {
+                if (this.user) { // Ensure user is not null
+                    const updatedUser: User = {
+                        ...this.user,
+                        avatarUrl: response.data.avatarUrl // Update the avatarUrl
+                    };
+                    this.setUser(updatedUser);
+                    localStorage.setItem("user", JSON.stringify(updatedUser));
+                    return true; // Successfully updated the avatar
+                }
+            } else {
+                console.error('Failed to update avatar', response.data.message);
+                return false; // Return false if response is not successful
+            }
+        } catch (error) {
+            console.error("Error during avatar update", error);
+            return false; // Return false if there was an error
+        } finally {
+            this.setLoading(false); // Always set loading to false
+        }
+
+        return false; // Add this line to make sure a boolean value is returned if no update happens
+    }
+
 
 }

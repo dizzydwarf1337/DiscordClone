@@ -27,7 +27,7 @@ const requests = {
         axios.get<T>(url, { headers: { NoAuth: noAuth } }).then(responseBody),
     post: <T>(url: string, body: {}, noAuth = false) =>
         axios.post<T>(url, body, { headers: { NoAuth: noAuth } }).then(responseBody),
-    put: <T>(url: string, body: {}, noAuth = false) =>
+    put: <T>(url: string, body: any, noAuth = false) =>
         axios.put<T>(url, body, { headers: { NoAuth: noAuth } }).then(responseBody),
     delete: <T>(url: string, noAuth = false) =>
         axios.delete<T>(url, { headers: { NoAuth: noAuth } }).then(responseBody),
@@ -36,7 +36,7 @@ const requests = {
 
 const Auth = {
     login: (loginModel: LoginModel, noAuth = false) => requests.post<ApiResponseModel>('/auth/login', loginModel, noAuth),
-    logout: ( noAuth = false) => requests.post<void>('/auth/logout', noAuth),
+    logout: (noAuth = false) => requests.post<void>('/auth/logout', noAuth),
 };
 const Users = {
     getUserById: (id: string, noAuth = false) => requests.get<ApiResponseModel>(`/user/${id}`, noAuth),
@@ -44,7 +44,24 @@ const Users = {
     createUser: (user: RegisterModel) => requests.post<ApiResponseModel>('/user/createUser', user),
     deleteUser: (id: string) => requests.delete<ApiResponseModel>(`/user/${id}`),
     updateUser: (user: User) => requests.put<ApiResponseModel>(`/user/${user.id}`, user),
-    
+
+    updateAvatar: (formData: FormData) => {
+        return axios
+            .post("/user/update-avatar", formData, {
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem('token')}`,
+                    "Content-Type": "multipart/form-data",
+                },
+            })
+            .then((response) => response.data)
+            .catch((error) => {
+                console.error("Error in updateAvatar", error);
+                throw error;
+            });
+    },
+
+
+
 }
 const agent = {
     Auth,

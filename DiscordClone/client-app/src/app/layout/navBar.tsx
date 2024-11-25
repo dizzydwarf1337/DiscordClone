@@ -1,5 +1,6 @@
 import { AppBar, Box, Button, CircularProgress, Toolbar, Typography } from "@mui/material";
 import "./styles.css";
+import { Link } from "react-router-dom";
 import { useStore } from "../stores/store";
 import { useNavigate } from "react-router-dom";
 export default function NavBar() {
@@ -9,7 +10,7 @@ export default function NavBar() {
     const handleOnClick = async () => {
         await userStore.LogOut();
         navigate("/");
-        
+
     }
     return (
         <>
@@ -23,7 +24,12 @@ export default function NavBar() {
 
                     {userStore.getUser() && (
                         <Box display="flex" justifyContent="right" alignItems="center" gap="20px">
-                            <Button variant="contained" color="Primary">
+                            <Button
+                                component={Link}  // U¿ywamy Link zamiast Button
+                                to="/profilepage" // Okreœlamy œcie¿kê do profilu
+                                variant="contained"
+                                color="Primary"
+                            >
                                 Profile
                             </Button>
                             <Button
