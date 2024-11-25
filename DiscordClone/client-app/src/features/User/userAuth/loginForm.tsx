@@ -1,8 +1,8 @@
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { Form, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { LoginModel } from "../../app/Models/LoginModel";
-import { useStore } from "../../app/stores/store";
+import { useStore } from "../../../app/stores/store";
+import { LoginModel } from "../../../app/Models/LoginModel";
 
 export default function LoginForm() {
 

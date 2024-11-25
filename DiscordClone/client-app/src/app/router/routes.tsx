@@ -1,9 +1,11 @@
 import { RouteObject, createBrowserRouter } from "react-router-dom";
 import App from "../layout/App";
-import HomePage from "../layout/HomePage";
-import LoginDashboard from "../../features/User/loginDashboard";
 import AdminPanel from "../../features/Admin/AdminPanel";
-import AdminDashboard from "../../features/Admin/AdminDashboard";
+import UserProfile from "../../features/User/userSettings/userProfile";
+import HomePage from "../layout/homePage";
+import LoginDashboard from "../../features/User/userAuth/loginDashboard";
+import ProfileSetting from "../../features/User/userSettings/profileSetting";
+import Test from "../../features/User/userSettings/test";
 
 
 export const routes: RouteObject[] = [
@@ -21,7 +23,17 @@ export const routes: RouteObject[] = [
         element: <AdminPanel />,
         children: [
         ]
-    }
+    },
+    {
+        path: '/profile',
+        element: <UserProfile />,
+        children: [
+            {
+                path: '/profile',
+                element: <ProfileSetting />,
+            },
+        ]
+    },
 ];
 
 
