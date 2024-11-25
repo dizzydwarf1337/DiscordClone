@@ -143,7 +143,8 @@ namespace DiscordClone.Controllers
                     Email = user.Email,
                     Id = user.Id.ToString(),
                     Username = user.UserName,
-                    Role = userRole.Name
+                    Role = userRole.Name,
+                    AvatarUrl = user.AvatarUrl
                 }));
             }
             catch (Exception)
