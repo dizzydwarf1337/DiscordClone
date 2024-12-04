@@ -45,7 +45,7 @@ public class FriendshipService
         if (friendship == null)
         {
             return false;
-       //     throw new InvalidOperationException("Friendship request not found or already accepted.");
+            //     throw new InvalidOperationException("Friendship request not found or already accepted.");
         }
 
         friendship.Status = FriendshipStatus.Accepted;
@@ -65,7 +65,7 @@ public class FriendshipService
         if (friendship == null)
         {
             return false;
-           // throw new InvalidOperationException("Friendship request not found.");
+            // throw new InvalidOperationException("Friendship request not found.");
         }
 
         friendship.Status = FriendshipStatus.Rejected;

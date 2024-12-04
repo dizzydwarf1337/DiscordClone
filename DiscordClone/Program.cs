@@ -19,6 +19,8 @@ builder.Services.AddDbContext<ApplicationContext>(opt =>
 );
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+builder.Services.AddScoped<FriendshipService>();
+
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => options.SignIn.RequireConfirmedAccount = false)
         .AddEntityFrameworkStores<ApplicationContext>()
         .AddDefaultTokenProviders();
