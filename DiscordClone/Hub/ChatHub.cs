@@ -4,26 +4,31 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DiscordClone.Hubs
 {
-public class ChatHub : Hub
+    [AllowAnonymous]
+    public class ChatHub : Hub
 {
     private readonly ApplicationContext _context;
     private readonly UserManager<User> _userManager;
         public ChatHub(ApplicationContext context, UserManager<User> userManager)
         {
-        _context = context;
-        _userManager = userManager;
+              _context = context;
+              _userManager = userManager;
         }
 
+        public override async Task OnConnectedAsync()
+        {
+            await Clients.All.SendAsync("ReceiveMessage", $"{Context.ConnectionId} has joined");
+        }
         public async Task JoinChannel(string serverName, string channelName)
         {
             string groupName = $"{serverName}:{channelName}";
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("ReceiveSystemMessage", $"{Context.ConnectionId} joined {channelName} on {serverName}");
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", $"{Context.ConnectionId} joined {channelName} on {serverName}");
         }
 
 
@@ -31,9 +36,8 @@ public class ChatHub : Hub
         {
             string groupName = $"{serverName}:{channelName}";
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("ReceiveSystemMessage", $"{Context.ConnectionId} left {channelName} on {serverName}");
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", $"{Context.ConnectionId} left {channelName} on {serverName}");
         }
-
 
         public async Task SendMessage(string userName, string message, string serverName, string channelName)
         {
@@ -46,12 +50,13 @@ public class ChatHub : Hub
                 return;
             }
 
-            Message message1 = new Message();
-            message1.Content = message;
-            message1.Channel = channel;
-            message1.User = user;
-            message1.Channel = channel;
-            _context.Add(message1);
+            var newMessage = new Message
+            {
+                Content = message,
+                Channel = channel,
+                User = user
+            };
+            _context.Add(newMessage);
             await _context.SaveChangesAsync();
 
             string groupName = $"{serverName}:{channelName}";
