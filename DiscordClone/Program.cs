@@ -28,7 +28,10 @@ builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("CorsPolicy", policy =>
     {
-        policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000");
+        policy.AllowAnyHeader()
+             .AllowAnyMethod()
+             .AllowCredentials()
+             .WithOrigins("http://localhost:3000");
     });
 });
 
@@ -58,7 +61,21 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/ChatHub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        },
+    };
 });
+
 var app = builder.Build();
 
 

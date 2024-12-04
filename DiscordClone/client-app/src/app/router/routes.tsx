@@ -5,7 +5,7 @@ import UserProfile from "../../features/User/userSettings/userProfile";
 import HomePage from "../layout/homePage";
 import LoginDashboard from "../../features/User/userAuth/loginDashboard";
 import ProfileSetting from "../../features/User/userSettings/profileSetting";
-import Test from "../../features/User/userSettings/test";
+import Default from "../../features/User/server/default";
 
 
 export const routes: RouteObject[] = [
@@ -14,8 +14,9 @@ export const routes: RouteObject[] = [
         element: <App />,
         children: [
             { index: true, element: <HomePage /> },
-            { path: 'main', element: <App /> }, 
+            { path: 'main', element: <App /> },
             { path: 'login', element: <LoginDashboard /> },
+            { path: 'default', element: <Default /> },
         ]
     },
     {

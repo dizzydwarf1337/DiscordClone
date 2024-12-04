@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace DiscordClone.Hubs
 {
-    [AllowAnonymous]
+    [Authorize]
     public class ChatHub : Hub
 {
     private readonly ApplicationContext _context;
@@ -38,7 +38,7 @@ namespace DiscordClone.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
             await Clients.Group(groupName).SendAsync("ReceiveMessage", $"{Context.ConnectionId} left {channelName} on {serverName}");
         }
-
+        [Authorize]
         public async Task SendMessage(string userName, string message, string serverName, string channelName)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
@@ -56,11 +56,11 @@ namespace DiscordClone.Hubs
                 Channel = channel,
                 User = user
             };
-            _context.Add(newMessage);
+            _context.Messages.Add(newMessage);
             await _context.SaveChangesAsync();
 
             string groupName = $"{serverName}:{channelName}";
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", Context.ConnectionId, message);
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", new { id=newMessage.MessageId,userName = user.UserName, content = message, server=server.ServerId,channel=channel.ChannelId});
         }
     }
 }

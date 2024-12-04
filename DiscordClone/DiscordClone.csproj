@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <Folder Include="client-app\src\app\API\" />
+    <Folder Include="client-app\src\features\User\server\" />
     <Folder Include="Views\" />
     <Folder Include="wwwroot\uploads\" />
     <Folder Include="wwwroot\avatars\" />

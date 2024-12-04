@@ -8,6 +8,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AdminPanel from '../../features/Admin/AdminPanel';
 import { ThemeProvider } from '@emotion/react';
 import theme from '../theme/theme';
+import { Box } from '@mui/material';
 
 function App() {
 
@@ -32,9 +33,12 @@ function App() {
                                 <AdminPanel />
                             ) : (
                                 <>
+                                
                                     <NavBar />
                                     <SideBar />
-                                    <Outlet />
+                                    <Box sx={{m:"50px 10px 10px 80px",p:"10px"} }>
+                                        <Outlet />
+                                    </Box>
                                 </>
                             )}
                         </>
