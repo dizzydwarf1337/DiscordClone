@@ -19,10 +19,10 @@ namespace DiscordClone.Controllers
         public FriendshipController(FriendshipService friendshipService, ApplicationContext context)
         {
             _friendshipService = friendshipService;
-            _context = context; 
-
+            _context = context;
         }
 
+        // Endpoint to send a friend request
         [HttpPost("send")]
         public async Task<IActionResult> SendFriendRequest([FromBody] FriendRequestDto request)
         {
@@ -32,17 +32,18 @@ namespace DiscordClone.Controllers
 
                 if (requestExists)
                 {
-                    return BadRequest("Friendship request already exists.");
+                    return BadRequest(new { success = false, message = "Friendship request already exists." });
                 }
 
-                return Ok("Friend request sent successfully.");
+                return Ok(new { success = true, message = "Friend request sent successfully." });
             }
             catch (Exception ex)
             {
-                return BadRequest($"An error occurred: {ex.Message}");
+                return StatusCode(500, new { success = false, message = $"An error occurred: {ex.Message}" });
             }
         }
 
+        // Endpoint to accept a friend request
         [HttpPost("accept")]
         public async Task<IActionResult> AcceptFriendRequest([FromBody] FriendRequestDto request)
         {
@@ -50,12 +51,13 @@ namespace DiscordClone.Controllers
 
             if (!success)
             {
-                return NotFound("Friendship request not found or already accepted.");
+                return NotFound(new { success = false, message = "Friendship request not found or already accepted." });
             }
 
-            return Ok("Friend request accepted.");
+            return Ok(new { success = true, message = "Friend request accepted." });
         }
 
+        // Endpoint to reject a friend request
         [HttpPost("reject")]
         public async Task<IActionResult> RejectFriendRequest([FromBody] FriendRequestDto request)
         {
@@ -63,28 +65,30 @@ namespace DiscordClone.Controllers
 
             if (!success)
             {
-                return NotFound("Friendship request not found.");
+                return NotFound(new { success = false, message = "Friendship request not found." });
             }
 
-            return Ok("Friend request rejected.");
+            return Ok(new { success = true, message = "Friend request rejected." });
         }
 
+        // Endpoint to get a user's friends by their username
         [HttpGet("friends/{userName}")]
         public async Task<IActionResult> GetUserFriendsByName(string userName)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
             if (user == null)
             {
-                return NotFound("User not found.");
+                return NotFound(new { success = false, message = "User not found." });
             }
+
             List<User> friends = await _friendshipService.GetUserFriendsAsync(user.Id);
 
             if (friends == null || friends.Count == 0)
             {
-                return NotFound("No friends found.");
+                return NotFound(new { success = false, message = "No friends found." });
             }
 
-            return Ok(friends);
+            return Ok(new { success = true, friends });
         }
     }
 }
