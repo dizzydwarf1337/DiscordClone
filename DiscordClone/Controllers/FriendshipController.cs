@@ -26,21 +26,14 @@ namespace DiscordClone.Controllers
         [HttpPost("send")]
         public async Task<IActionResult> SendFriendRequest([FromBody] FriendRequestDto request)
         {
-            try
-            {
-                bool requestExists = await _friendshipService.SendFriendRequestAsync(request.SenderId, request.ReceiverId);
+           bool requestExists = await _friendshipService.SendFriendRequestAsync(request.SenderId, request.ReceiverId);
 
-                if (requestExists)
+            if (requestExists)
                 {
                     return BadRequest(new { success = false, message = "Friendship request already exists." });
                 }
 
-                return Ok(new { success = true, message = "Friend request sent successfully." });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = $"An error occurred: {ex.Message}" });
-            }
+            return Ok(new { success = true, message = "Friend request sent successfully." });
         }
 
         // Endpoint to accept a friend request

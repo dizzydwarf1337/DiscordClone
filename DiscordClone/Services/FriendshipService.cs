@@ -19,7 +19,7 @@ public class FriendshipService
 
         if (existingRequest != null)
         {
-            throw new InvalidOperationException("Friendship request already exists.");
+           // throw new InvalidOperationException("Friendship request already exists.");
             return true;
         }
 
