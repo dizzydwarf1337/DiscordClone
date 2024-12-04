@@ -17,6 +17,9 @@ namespace DiscordClone.Models
         // Online status of the user (true if online, false otherwise)
         public bool IsOnline { get; set; } = false;
 
+        public ICollection<Friendship>? SentFriendRequests { get; set; }
+        public ICollection<Friendship>? ReceivedFriendRequests { get; set; }
+
         // Collection of server memberships for the user
         public ICollection<ServerMember>? ServerMembers { get; set; }
 

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using DiscordClone.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("ApplicationContextConnection") ?? throw new InvalidOperationException("Connection string 'ApplicationContextConnection' not found.");
@@ -18,6 +19,8 @@ builder.Services.AddDbContext<ApplicationContext>(opt =>
 );
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+builder.Services.AddScoped<FriendshipService>();
+
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => options.SignIn.RequireConfirmedAccount = false)
         .AddEntityFrameworkStores<ApplicationContext>()
         .AddDefaultTokenProviders();
@@ -28,7 +31,12 @@ builder.Services.AddCors(opt =>
         policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000");
     });
 });
-//builder.Services.AddSignalR();
+
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+});
+
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];
@@ -77,13 +85,15 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-app.UseCors("CorsPolicy");
+
+app.MapHub<ChatHub>("/ChatHub");
+
 app.Run();
