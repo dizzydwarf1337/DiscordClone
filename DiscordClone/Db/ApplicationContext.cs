@@ -48,6 +48,18 @@ namespace DiscordClone.Db
                 .WithMany(u => u.ReceivedDirectMessages)
                 .HasForeignKey(dm => dm.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            modelBuilder.Entity<User>()
+            .HasMany(u => u.SentFriendRequests) 
+            .WithOne(f => f.Sender) 
+            .HasForeignKey(f => f.SenderId) 
+            .OnDelete(DeleteBehavior.Restrict); 
+
+            modelBuilder.Entity<User>()
+                .HasMany(u => u.ReceivedFriendRequests)
+                .WithOne(f => f.Receiver)
+                .HasForeignKey(f => f.ReceiverId) 
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
     

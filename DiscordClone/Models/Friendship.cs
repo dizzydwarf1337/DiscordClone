@@ -27,10 +27,8 @@ namespace DiscordClone.Models
 
         public DateTime? AcceptedAt { get; set; }
 
-        [Required]
-        public User Sender { get; set; }
-        [Required]
-        public User Receiver { get; set; }
+        public virtual User? Sender { get; set; }
+        public virtual User? Receiver { get; set; }
 
     }
 }
