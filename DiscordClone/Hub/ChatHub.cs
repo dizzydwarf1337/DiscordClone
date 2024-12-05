@@ -3,6 +3,7 @@ using DiscordClone.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 
 namespace DiscordClone.Hubs
@@ -20,7 +21,19 @@ namespace DiscordClone.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            await Clients.All.SendAsync("ReceiveMessage", new { content=$"{Context.ConnectionId} has joined" });
+            var user = Context.User;
+
+            if (user?.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                var userName = user.Identity.Name;
+                await Clients.All.SendAsync("ReceiveMessage", new { content = $"{userName} has joined" });
+                await base.OnConnectedAsync();
+            }
+            else
+            {
+                Context.Abort();
+            }
         }
         public async Task JoinChannel(string serverName, string channelName)
         {
