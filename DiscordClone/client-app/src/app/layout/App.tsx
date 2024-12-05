@@ -35,8 +35,8 @@ function App() {
                                 <>
                                 
                                     <NavBar />
-                                    <SideBar />
-                                    <Box sx={{m:"50px 10px 10px 80px",p:"10px"} }>
+                                            <SideBar />
+                                            <Box width="100%" height="100%" flex="display" justifyContent="center" alignItems="center">
                                         <Outlet />
                                     </Box>
                                 </>

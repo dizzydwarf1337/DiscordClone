@@ -2,14 +2,12 @@
 using DiscordClone.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
+
 
 namespace DiscordClone.Hubs
 {
-    [Authorize]
+    //[Authorize]
     public class ChatHub : Hub
 {
     private readonly ApplicationContext _context;
@@ -22,23 +20,31 @@ namespace DiscordClone.Hubs
 
         public override async Task OnConnectedAsync()
         {
-            await Clients.All.SendAsync("ReceiveMessage", $"{Context.ConnectionId} has joined");
+            await Clients.All.SendAsync("ReceiveMessage", new { content=$"{Context.ConnectionId} has joined" });
         }
         public async Task JoinChannel(string serverName, string channelName)
         {
             string groupName = $"{serverName}:{channelName}";
             await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", $"{Context.ConnectionId} joined {channelName} on {serverName}");
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", new { content=$"{Context.ConnectionId} joined {channelName} on {serverName}" });
         }
 
 
-        public async Task LeaveChannel(string serverName, string channelName)
+        public async Task LeaveChannel(string serverName, string channelName = "Default")
         {
             string groupName = $"{serverName}:{channelName}";
+            Console.WriteLine(groupName);
+            var server = await _context.Servers.FirstOrDefaultAsync(u => u.Name == serverName);
+            Console.WriteLine(server);
+            var channel = await _context.Channels.FirstOrDefaultAsync(u => u.Name == channelName);
+            Console.WriteLine(channel);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == "admin");
+            var leaveMessage = new Message { MessageId = Guid.NewGuid(), User=user, Content = "User left the channel", ChannelId = channel.ChannelId };
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, groupName);
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", $"{Context.ConnectionId} left {channelName} on {serverName}");
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", leaveMessage);
+            await _context.Messages.AddAsync(leaveMessage);
+            await _context.SaveChangesAsync();
         }
-        [Authorize]
         public async Task SendMessage(string userName, string message, string serverName, string channelName)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
@@ -60,7 +66,7 @@ namespace DiscordClone.Hubs
             await _context.SaveChangesAsync();
 
             string groupName = $"{serverName}:{channelName}";
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", new { id=newMessage.MessageId,userName = user.UserName, content = message, server=server.ServerId,channel=channel.ChannelId});
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", new { MessageId = newMessage.MessageId, userName = user.UserName, Content = newMessage.Content   , channelId = channel.ChannelId, serverId=server.ServerId });
         }
     }
 }

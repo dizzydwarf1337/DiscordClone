@@ -1,6 +1,6 @@
 import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
 import ChatMessage from "../Models/ChatMessage";
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 
 
 export default class SignalRStore {
@@ -9,7 +9,10 @@ export default class SignalRStore {
     chat: Object = {};
     constructor() {
         makeAutoObservable(this);
-        this.startConnection();
+        if (localStorage.getItem('user')) {
+            this.startConnection();
+        }
+        
     }
     startConnection = async () => {
         try {
@@ -32,7 +35,8 @@ export default class SignalRStore {
                     channelId:message.channel,
                     serverId:message.server
                 };
-                this.messages.push(newMessage);
+                runInAction(() => this.messages.push(newMessage));
+                
             });
         }
         catch (error) {
@@ -48,9 +52,9 @@ export default class SignalRStore {
         }
     };
 
-    sendMessage = async (message: ChatMessage) => {
+    sendMessage = async (message: any) => {
         try {
-            await this.connection?.invoke("SendMessage", message);
+            await this.connection?.invoke("SendMessage", `${message.userName}`,`${message.message}`,`${message.serverName}`,`${message.channelName}`);
         }
         catch (error) {
             console.error(error);
