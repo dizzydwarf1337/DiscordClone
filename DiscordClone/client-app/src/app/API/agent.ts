@@ -48,7 +48,68 @@ const Users = {
 }
 const agent = {
     Auth,
-    Users
+    Users,
+    Servers: {
+        createServer: async (serverData: {
+            name: string,
+            description?: string,
+            ownerId: string,
+            isPublic: boolean
+        }) => {
+            try {
+                const response = await axios.post('/servers', serverData);
+                return {
+                    success: true,
+                    data: response.data,
+                    message: 'Server created successfully'
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    data: null,
+                    message: error.response?.data?.message || 'Failed to create server'
+                };
+            }
+        },
+    },
+    getUserServers: async (userId: string) => {
+        try {
+            const response = await axios.get(`/servers/user/${userId}`);
+            return {
+                success: true,
+                data: response.data,
+                message: 'Servers retrieved successfully'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                data: null,
+                message: error.response?.data?.message || 'Failed to retrieve servers'
+            };
+        }
+    },
+    Channels: {
+        createChannel: async (channelData: {
+            name: string,
+            serverId: string,
+            channelType: string
+        }) => {
+            try {
+                const response = await axios.post('/channels', channelData);
+                return {
+                    success: true,
+                    data: response.data,
+                    message: 'Channel created successfully'
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    data: null,
+                    message: error.response?.data?.message || 'Failed to create channel'
+                };
+            }
+        },
+    }
 };
 
 export default agent;
