@@ -212,37 +212,75 @@ namespace DiscordClone.Controllers
             }
         }
 
-        // Endpoint to delete a user by ID
-        [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(string id)
+            // Endpoint to delete a user by ID
+            [Authorize(Roles = "Admin")]
+            [HttpDelete("{id}")]
+            public async Task<IActionResult> DeleteUser(string id)
+            {
+                try
+                {
+                    // Find the user by ID
+                    var user = await _userManager.FindByIdAsync(id);
+                    if (user == null) // If user is not found, log and return an error response
+                    {
+                        _logger.LogWarning("User not found: {UserId}", id);
+                        return NotFound(new ApiResponse(false, "User not found."));
+                    }
+
+                    // Physically delete the user from the database
+                    var result = await _userManager.DeleteAsync(user);
+                    if (!result.Succeeded) // If delete operation fails, log and return an error response
+                    {
+                        _logger.LogWarning("Failed to delete user {UserId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
+                        return BadRequest(new ApiResponse(false, "Failed to delete user.", result.Errors));
+                    }
+
+                    _logger.LogInformation("User {UserId} deleted successfully.", id);
+                    return Ok(new ApiResponse(true, "User deleted successfully."));
+                }
+                catch (Exception ex) // Handle any exceptions that occur during user deletion
+                {
+                    _logger.LogError(ex, "An error occurred while deleting user {UserId}", id);
+                    return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
+                }
+            }
+
+        
+
+        [HttpDelete("self")]
+        [Authorize] // Każdy zalogowany użytkownik
+        public async Task<IActionResult> DeleteOwnAccount()
         {
             try
             {
-                // Find the user by ID
-                var user = await _userManager.FindByIdAsync(id);
-                if (user == null) // If user is not found, log and return an error response
+                // Znajdź aktualnie zalogowanego użytkownika
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
                 {
-                    _logger.LogWarning("User not found: {UserId}", id);
+                    _logger.LogWarning("Current user not found.");
                     return NotFound(new ApiResponse(false, "User not found."));
                 }
 
-                // Delete the user from the database
+                // Usuń użytkownika z bazy danych
                 var result = await _userManager.DeleteAsync(user);
-                if (!result.Succeeded) // If delete operation fails, log and return an error response
+                if (!result.Succeeded)
                 {
-                    _logger.LogWarning("Failed to delete user {UserId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
-                    return BadRequest(new ApiResponse(false, "Failed to delete user.", result.Errors));
+                    _logger.LogWarning("Failed to delete user {UserId}: {Errors}", user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
+                    return BadRequest(new ApiResponse(false, "Failed to delete account.", result.Errors));
                 }
 
-                return Ok(new ApiResponse(true, "User deleted successfully."));
+                _logger.LogInformation("User {UserId} deleted their own account.", user.Id);
+                return Ok(new ApiResponse(true, "Account deleted successfully."));
             }
-            catch (Exception ex) // Handle any exceptions that occur during user deletion
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while deleting user {UserId}", id);
+                _logger.LogError(ex, "An error occurred while deleting own account.");
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
             }
         }
+
+
+
 
         [HttpPost("update-avatar")]
         [Authorize] // Make sure only authenticated users can upload avatars
