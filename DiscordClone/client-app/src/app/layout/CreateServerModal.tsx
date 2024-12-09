@@ -2,6 +2,7 @@
 import { observer } from 'mobx-react-lite';
 import { useStore } from '../stores/store';
 import agent from '../API/agent';
+import { Box, Button, Typography } from '@mui/material';
 
 export const CreateServerModal = observer(() => {
     const { userStore, signalRStore } = useStore();
@@ -39,21 +40,15 @@ export const CreateServerModal = observer(() => {
     };
 
     return (
-        <div>
-            <button
+        <Box>
+            <Button
                 onClick={() => setIsOpen(true)}
-                style={{
-                    padding: '8px 16px',
-                    border: '1px solid #ccc',
-                    borderRadius: '4px',
-                    backgroundColor: 'white'
-                }}
             >
                 Create Server
-            </button>
+            </Button>
 
             {isOpen && (
-                <div
+                <Box
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -68,22 +63,22 @@ export const CreateServerModal = observer(() => {
                     }}
                     onClick={() => setIsOpen(false)}
                 >
-                    <div
-                        style={{
-                            backgroundColor: 'white',
+                    <Box display="flex" flexDirection="column" justifyContent="center"
+                      sx={{
+                            backgroundColor: 'secondary.main',
                             padding: '20px',
                             borderRadius: '8px',
-                            width: '400px',
+                            width: '700px',
                             maxWidth: '90%'
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <h2 style={{ marginBottom: '16px' }}>Create New Server</h2>
-                        <p style={{ marginBottom: '16px', color: '#666' }}>
+                        <Typography variant="h2"  >Create New Server</Typography>
+                        <Typography variant="h5" >
                             Set up a new server for your community
-                        </p>
+                        </Typography>
 
-                        <div style={{ marginBottom: '16px' }}>
+                        <Box sx={{mb:"8px"} }>
                             <label
                                 htmlFor="serverName"
                                 style={{ display: 'block', marginBottom: '8px' }}
@@ -103,9 +98,9 @@ export const CreateServerModal = observer(() => {
                                     borderRadius: '4px'
                                 }}
                             />
-                        </div>
+                        </Box>
 
-                        <div style={{ marginBottom: '16px' }}>
+                        <Box style={{ marginBottom: '16px' }}>
                             <label
                                 htmlFor="description"
                                 style={{ display: 'block', marginBottom: '8px' }}
@@ -125,27 +120,23 @@ export const CreateServerModal = observer(() => {
                                     borderRadius: '4px'
                                 }}
                             />
-                        </div>
+                        </Box>
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button
+                        <Box style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button variant="outlined" color="success"
                                 onClick={handleCreateServer}
                                 disabled={!serverName || userStore.loading}
                                 style={{
                                     padding: '8px 16px',
-                                    backgroundColor: !serverName || userStore.loading ? '#ccc' : '#007bff',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
                                     cursor: !serverName || userStore.loading ? 'not-allowed' : 'pointer'
                                 }}
                             >
                                 {userStore.loading ? 'Creating...' : 'Create Server'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                            </Button>
+                        </Box>
+                    </Box>
+                </Box>
             )}
-        </div>
+        </Box>
     );
 });

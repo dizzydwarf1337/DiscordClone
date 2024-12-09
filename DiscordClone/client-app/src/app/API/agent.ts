@@ -45,7 +45,8 @@ const Users = {
     deleteUser: (id: string) => requests.delete<ApiResponseModel>(`/user/${id}`),
     updateUser: (user: User) => requests.put<ApiResponseModel>(`/user/${user.id}`, user),
     updateAvatar: (imageFile: FormData, noAuth = false) => requests.post<ApiResponseModel>('/user/update-avatar', imageFile, noAuth),
-}
+};
+
 const agent = {
     Auth,
     Users,
