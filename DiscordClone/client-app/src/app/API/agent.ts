@@ -45,10 +45,72 @@ const Users = {
     deleteUser: (id: string) => requests.delete<ApiResponseModel>(`/user/${id}`),
     updateUser: (user: User) => requests.put<ApiResponseModel>(`/user/${user.id}`, user),
     updateAvatar: (imageFile: FormData, noAuth = false) => requests.post<ApiResponseModel>('/user/update-avatar', imageFile, noAuth),
-}
+};
+
 const agent = {
     Auth,
-    Users
+    Users,
+    Servers: {
+        createServer: async (serverData: {
+            name: string,
+            description?: string,
+            ownerId: string,
+            isPublic: boolean
+        }) => {
+            try {
+                const response = await axios.post('/server/create', serverData);
+                return {
+                    success: true,
+                    data: response.data,
+                    message: 'Server created successfully'
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    data: null,
+                    message: error.response?.data?.message || 'Failed to create server'
+                };
+            }
+        },
+    },
+    getUserServers: async (userId: string) => {
+        try {
+            const response = await axios.get(`/server/user/${userId}`);
+            return {
+                success: true,
+                data: response.data,
+                message: 'Servers retrieved successfully'
+            };
+        } catch (error) {
+            return {
+                success: false,
+                data: null,
+                message: error.response?.data?.message || 'Failed to retrieve servers'
+            };
+        }
+    },
+    Channels: {
+        createChannel: async (channelData: {
+            name: string,
+            serverId: string,
+            channelType: string
+        }) => {
+            try {
+                const response = await axios.post('/channel/create', channelData);
+                return {
+                    success: true,
+                    data: response.data,
+                    message: 'Channel created successfully'
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    data: null,
+                    message: error.response?.data?.message || 'Failed to create channel'
+                };
+            }
+        },
+    }
 };
 
 export default agent;

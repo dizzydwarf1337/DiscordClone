@@ -37,6 +37,12 @@ namespace DiscordClone.Db
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Server>()
+                .HasOne(s => s.Owner)
+                .WithMany()         
+                .HasForeignKey(s => s.OwnerId) 
+                .OnDelete(DeleteBehavior.Cascade);
+
             modelBuilder.Entity<DirectMessage>()
                 .HasOne(dm => dm.Sender)
                 .WithMany(u => u.SentDirectMessages)

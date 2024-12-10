@@ -51,11 +51,11 @@ const theme = createTheme({
                     }
                 },
                 outlinedSuccess: {
-                    backgroundColor: "primary.main",
+                    backgroundColor: "#409856",
                     color: "primary.contrastText",
                     border:"none",
                     '&:hover': {
-                        backgroundColor: "#409856",
+                        transform:"scale(1.05)",
                         boxShadow: "none",
                     },
                 },
