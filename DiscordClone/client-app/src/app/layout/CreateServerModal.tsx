@@ -19,6 +19,7 @@ export const CreateServerModal = observer(() => {
                 isPublic: true
             });
 
+
             if (response.success) {
                 await agent.Channels.createChannel({
                     name: 'general',

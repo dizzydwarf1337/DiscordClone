@@ -12,9 +12,9 @@ namespace DiscordClone.Controllers
         {
             if (!result.IsSuccess)
             {
-                return BadRequest(new { success = result.IsSuccess, message = result.Message });
+                return BadRequest(result.Message);
             }
-            return Ok(new { success = result.IsSuccess, data = result.Data });
+            return Ok(result.Data);
         }
     }
 }
