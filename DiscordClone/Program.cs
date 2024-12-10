@@ -8,18 +8,21 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using DiscordClone.Hubs;
+using DiscordClone.Services.ServerOperations;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("ApplicationContextConnection") ?? throw new InvalidOperationException("Connection string 'ApplicationContextConnection' not found.");
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddDbContext<ApplicationContext>(opt => 
+builder.Services.AddDbContext<ApplicationContext>(opt =>
     opt.UseSqlServer(connectionString)
 );
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddScoped<FriendshipService>();
+builder.Services.AddScoped<IServerOperationsService, ServerOperationsService>();
+builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>();
 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => options.SignIn.RequireConfirmedAccount = false)
         .AddEntityFrameworkStores<ApplicationContext>()

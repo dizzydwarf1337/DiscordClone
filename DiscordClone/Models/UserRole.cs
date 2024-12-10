@@ -12,7 +12,7 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the user
         [ForeignKey("User")]
-        public Guid UserId { get; set; } 
+        public Guid UserId { get; set; }
 
         // The user to whom the role is assigned
         public User User { get; set; } = null!;
@@ -23,5 +23,11 @@ namespace DiscordClone.Models
 
         // The role assigned to the user
         public Role Role { get; set; } = null!;
+
+        // Foreign key referencing the server where the role is assigned
+        [ForeignKey("Server")]
+        public Guid ServerId { get; set; }
+
+        public Server Server { get; set; } = null!;
     }
 }

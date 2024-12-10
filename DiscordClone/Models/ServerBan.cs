@@ -23,11 +23,17 @@ namespace DiscordClone.Models
         // The server from which the user is banned
         public Server Server { get; set; } = null!;
 
+        [ForeignKey("BanningUser")]
+        public Guid BanningUserId { get; set; }
+
+        // The user who is banning
+        public User BanningUser { get; set; } = null!;
+
         // Foreign key referencing the banned user
         [ForeignKey("User")]
-        public Guid UserId { get; set; }
+        public Guid BannedUserId { get; set; }
 
         // The user who is banned
-        public User User { get; set; } = null!;
+        public User BannedUser { get; set; } = null!;
     }
 }
