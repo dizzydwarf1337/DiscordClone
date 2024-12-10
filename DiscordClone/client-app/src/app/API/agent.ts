@@ -58,7 +58,7 @@ const agent = {
             isPublic: boolean
         }) => {
             try {
-                const response = await axios.post('/servers', serverData);
+                const response = await axios.post('/server/create', serverData);
                 return {
                     success: true,
                     data: response.data,
@@ -75,7 +75,7 @@ const agent = {
     },
     getUserServers: async (userId: string) => {
         try {
-            const response = await axios.get(`/servers/user/${userId}`);
+            const response = await axios.get(`/server/user/${userId}`);
             return {
                 success: true,
                 data: response.data,
@@ -96,7 +96,7 @@ const agent = {
             channelType: string
         }) => {
             try {
-                const response = await axios.post('/channels', channelData);
+                const response = await axios.post('/channel/create', channelData);
                 return {
                     success: true,
                     data: response.data,

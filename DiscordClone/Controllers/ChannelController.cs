@@ -11,7 +11,6 @@ using System.Collections.Generic;
 
 namespace DiscordClone.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
     [Route("api/[controller]")]
     public class ChannelController : BaseController
@@ -28,7 +27,7 @@ namespace DiscordClone.Controllers
         {
             var result = await _channelOperationsService.CreateChannelAsync(channelDto);
             return HandleResult(result);
-            }
+        }
 
         [HttpDelete("delete")]
         public async Task<IActionResult> DeleteChannel([FromQuery] Guid channelId)

@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DiscordClone.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
     [Route("api/[controller]")]
     //[Authorize]
@@ -28,7 +27,7 @@ namespace DiscordClone.Controllers
         {
             var result = await _serverOperationsService.CreateServerAsync(serverDto);
             return HandleResult(result);
-            }
+        }
 
         [HttpPost("join")]
         public async Task<IActionResult> JoinServer([FromQuery] Guid userId, [FromQuery] Guid serverId)
@@ -64,7 +63,5 @@ namespace DiscordClone.Controllers
             var result = await _serverOperationsService.RemoveBanAsync(unbanAction.ServerId, unbanAction.RemoverId, unbanAction.BannedUserId);
             return HandleResult(result);
         }
-
-
     }
 }
