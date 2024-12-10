@@ -1,4 +1,6 @@
-﻿using DiscordClone.Models;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
 using DiscordClone.Services.ServerOperations;
 using DiscordClone.Utils;
@@ -8,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace DiscordClone.Controllers
 {
+    [Route("api/[controller]")]
     [ApiController]
     [Route("api/[controller]")]
     //[Authorize]
@@ -25,11 +28,11 @@ namespace DiscordClone.Controllers
         {
             var result = await _serverOperationsService.CreateServerAsync(serverDto);
             return HandleResult(result);
-        }
+            }
 
         [HttpPost("join")]
         public async Task<IActionResult> JoinServer([FromQuery] Guid userId, [FromQuery] Guid serverId)
-        {
+            {
             var result = await _serverOperationsService.JoinServerAsync(userId, serverId);
             return HandleResult(result);
         }
@@ -43,10 +46,10 @@ namespace DiscordClone.Controllers
 
         [HttpDelete("delete")]
         public async Task<IActionResult> DeleteServer([FromQuery] Guid userId, [FromQuery] Guid serverId)
-        {
+            {
             var result = await _serverOperationsService.DeleteServerAsync(userId, serverId);
             return HandleResult(result);
-        }
+            }
 
         [HttpPost("ban")]
         public async Task<IActionResult> BanUser(ServerBanDto serverban)
@@ -61,6 +64,7 @@ namespace DiscordClone.Controllers
             var result = await _serverOperationsService.RemoveBanAsync(unbanAction.ServerId, unbanAction.RemoverId, unbanAction.BannedUserId);
             return HandleResult(result);
         }
+
 
     }
 }
