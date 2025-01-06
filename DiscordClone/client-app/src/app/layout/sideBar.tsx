@@ -6,7 +6,7 @@ export default function SideBar() {
     const { userStore } = useStore();
     return (
         <>
-            <Drawer variant="permanent" >
+            <Drawer variant="permanent" >   
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <Link to={`/main`}>
                         <Box sx={{
@@ -17,20 +17,20 @@ export default function SideBar() {
                                 {userStore.user?.username}
                          </Box>
                     </Link>
-                    <Link to={`/default`} >
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} >
-                       
+                    <Link to={`/default`} style={{ textDecoration: "none", textAlign:"center" }}>
+                        <Box sx={{
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            height: "50px", width: "50px",
+                            fontSize: "10px", color: "white" }} >
+                       Default Server
                         </Box>
                     </Link>
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} />
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} />
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} />
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} />
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} />
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} />
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} />
-                    <Box sx={{ backgroundColor: "red", borderRadius: "20px", height: "50px", width: "50px" }} />
-
+                    <Box sx={{
+                        borderRadius: "20px", height: "50px", width: "50px", fontSize: "10px", display: "flex",
+                        alignItems: "center", justifyContent: "center", color: "white", backgroundColor: "#2E2E2E"
+                    }} >
+                        Add Friend
+                    </Box>
                 </Box>
             </Drawer>
         </>
