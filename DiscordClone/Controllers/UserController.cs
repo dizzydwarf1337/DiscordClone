@@ -1,12 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DiscordClone.Db;
+using DiscordClone.Models;
+using DiscordClone.Models.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using DiscordClone.Models;
-using Microsoft.Extensions.Logging;
-using DiscordClone.Models.Dtos;
-using System.Web;
-using System.Configuration;
-using DiscordClone.Db;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiscordClone.Controllers
@@ -172,7 +169,7 @@ namespace DiscordClone.Controllers
 
         // Endpoint to update user details
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser( [FromBody] UserDto updateUserDto)
+        public async Task<IActionResult> UpdateUser([FromBody] UserDto updateUserDto)
         {
             var id = updateUserDto.Id;
             // Check if the input model is valid
@@ -212,40 +209,40 @@ namespace DiscordClone.Controllers
             }
         }
 
-            // Endpoint to delete a user by ID
-            [Authorize(Roles = "Admin")]
-            [HttpDelete("{id}")]
-            public async Task<IActionResult> DeleteUser(string id)
+        // Endpoint to delete a user by ID
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            try
             {
-                try
+                // Find the user by ID
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null) // If user is not found, log and return an error response
                 {
-                    // Find the user by ID
-                    var user = await _userManager.FindByIdAsync(id);
-                    if (user == null) // If user is not found, log and return an error response
-                    {
-                        _logger.LogWarning("User not found: {UserId}", id);
-                        return NotFound(new ApiResponse(false, "User not found."));
-                    }
-
-                    // Physically delete the user from the database
-                    var result = await _userManager.DeleteAsync(user);
-                    if (!result.Succeeded) // If delete operation fails, log and return an error response
-                    {
-                        _logger.LogWarning("Failed to delete user {UserId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
-                        return BadRequest(new ApiResponse(false, "Failed to delete user.", result.Errors));
-                    }
-
-                    _logger.LogInformation("User {UserId} deleted successfully.", id);
-                    return Ok(new ApiResponse(true, "User deleted successfully."));
+                    _logger.LogWarning("User not found: {UserId}", id);
+                    return NotFound(new ApiResponse(false, "User not found."));
                 }
-                catch (Exception ex) // Handle any exceptions that occur during user deletion
+
+                // Physically delete the user from the database
+                var result = await _userManager.DeleteAsync(user);
+                if (!result.Succeeded) // If delete operation fails, log and return an error response
                 {
-                    _logger.LogError(ex, "An error occurred while deleting user {UserId}", id);
-                    return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
+                    _logger.LogWarning("Failed to delete user {UserId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
+                    return BadRequest(new ApiResponse(false, "Failed to delete user.", result.Errors));
                 }
+
+                _logger.LogInformation("User {UserId} deleted successfully.", id);
+                return Ok(new ApiResponse(true, "User deleted successfully."));
             }
+            catch (Exception ex) // Handle any exceptions that occur during user deletion
+            {
+                _logger.LogError(ex, "An error occurred while deleting user {UserId}", id);
+                return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
+            }
+        }
 
-        
+
 
         [HttpDelete("self")]
         [Authorize] // Każdy zalogowany użytkownik

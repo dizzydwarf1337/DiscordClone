@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -93,33 +92,33 @@ namespace DiscordClone.Migrations
                 oldType: "nvarchar(max)");
 
             migrationBuilder.CreateTable(
-                name: "Friendships",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReceiverId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    AcceptedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Friendships", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Friendships_AspNetUsers_ReceiverId",
-                        column: x => x.ReceiverId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Friendships_AspNetUsers_SenderId",
-                        column: x => x.SenderId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
+                 name: "Friendships",
+                 columns: table => new
+                 {
+                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"), // Использование NEWID() для SQL Server
+                     SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                     ReceiverId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                     Status = table.Column<int>(type: "int", nullable: false),
+                     SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                     AcceptedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                 },
+                 constraints: table =>
+                 {
+                     table.PrimaryKey("PK_Friendships", x => x.Id);
+                     table.ForeignKey(
+                         name: "FK_Friendships_AspNetUsers_ReceiverId",
+                         column: x => x.ReceiverId,
+                         principalTable: "AspNetUsers",
+                         principalColumn: "Id",
+                         onDelete: ReferentialAction.Restrict);
+                     table.ForeignKey(
+                         name: "FK_Friendships_AspNetUsers_SenderId",
+                         column: x => x.SenderId,
+                         principalTable: "AspNetUsers",
+                         principalColumn: "Id",
+                         onDelete: ReferentialAction.Restrict);
+                 });
+
 
             migrationBuilder.CreateTable(
                 name: "PinnedMessages",

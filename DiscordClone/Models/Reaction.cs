@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DiscordClone.Models
 {
@@ -26,7 +26,7 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the user who added the reaction
         [ForeignKey("User")]
-        public Guid UserId { get; set; } 
+        public Guid UserId { get; set; }
 
         // The user who added the reaction
         public User User { get; set; } = null!;

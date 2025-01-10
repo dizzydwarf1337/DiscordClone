@@ -1,14 +1,13 @@
 using DiscordClone.Db;
+using DiscordClone.Hubs;
 using DiscordClone.Models;
 using DiscordClone.Services;
+using DiscordClone.Services.ServerOperations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using DiscordClone.Hubs;
-using DiscordClone.Services.ServerOperations;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("ApplicationContextConnection") ?? throw new InvalidOperationException("Connection string 'ApplicationContextConnection' not found.");
@@ -24,7 +23,7 @@ builder.Services.AddScoped<FriendshipService>();
 builder.Services.AddScoped<IServerOperationsService, ServerOperationsService>();
 builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>();
 builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>();
-builder.Services.AddScoped<ServerOperationsService>(); 
+builder.Services.AddScoped<ServerOperationsService>();
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddSingleton<ChatHub>();
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => options.SignIn.RequireConfirmedAccount = false)

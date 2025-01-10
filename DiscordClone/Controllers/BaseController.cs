@@ -1,6 +1,5 @@
 using DiscordClone.Utils;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
 
 namespace DiscordClone.Controllers
 {

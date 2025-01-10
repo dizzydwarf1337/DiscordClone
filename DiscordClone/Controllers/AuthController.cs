@@ -1,12 +1,10 @@
-﻿using DiscordClone.Models.Dtos;
+﻿using DiscordClone.Db;
 using DiscordClone.Models;
+using DiscordClone.Models.Dtos;
 using DiscordClone.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using SQLitePCL;
-using System.Runtime.CompilerServices;
-using DiscordClone.Db;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -91,9 +89,9 @@ namespace DiscordClone.Controllers
                     });
                     await _context.SaveChangesAsync();
                 }
-                
+
                 // Return the token in the response
-                return Ok(new ApiResponse(true, "Login successful", new { token}));
+                return Ok(new ApiResponse(true, "Login successful", new { token }));
             }
             catch (Exception ex) // Handle any exceptions
             {
@@ -108,7 +106,7 @@ namespace DiscordClone.Controllers
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); 
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 var token = await _context.UserTokens
                     .FirstOrDefaultAsync(t => t.UserId == Guid.Parse(userId) && t.LoginProvider == "Jwt" && t.Name == "Bearer");
 
@@ -126,7 +124,7 @@ namespace DiscordClone.Controllers
                 }
 
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while logging out");
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));

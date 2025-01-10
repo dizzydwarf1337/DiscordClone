@@ -25,7 +25,7 @@ namespace DiscordClone.Services.ServerOperations
         private readonly IChannelOperationsService _channelOperationService;
         private readonly ChatHub _chatHub;
 
-        public ServerOperationsService(ApplicationContext context, IChannelOperationsService channelOperationService,ChatHub chatHub)
+        public ServerOperationsService(ApplicationContext context, IChannelOperationsService channelOperationService, ChatHub chatHub)
         {
             _context = context;
             _channelOperationService = channelOperationService;
@@ -48,7 +48,7 @@ namespace DiscordClone.Services.ServerOperations
                 IconUrl = serverDto.IconUrl,
                 IsPublic = serverDto.IsPublic
             };
-            
+
             await _context.Servers.AddAsync(server);
             await _context.SaveChangesAsync();
             var serverMember = new ServerMember
@@ -60,8 +60,8 @@ namespace DiscordClone.Services.ServerOperations
                 IsMuted = false
             };
             await _context.ServerMembers.AddAsync(serverMember);
-            await _channelOperationService.CreateChannelAsync(new ChannelCreateDto { ServerId = server.ServerId, Name = "Default", ChannelType="Default"}, owner.Id);
-           
+            await _channelOperationService.CreateChannelAsync(new ChannelCreateDto { ServerId = server.ServerId, Name = "Default", ChannelType = "Default" }, owner.Id);
+
             var serverAdminRole = new Role
             {
                 RoleId = Guid.NewGuid(),
@@ -79,7 +79,7 @@ namespace DiscordClone.Services.ServerOperations
                 Permissions = "SEND_MESSAGES",
                 Color = "Blue",
             };
-            await _context.ServersRoles.AddRangeAsync([serverAdminRole,serverUserRole]);
+            await _context.ServersRoles.AddRangeAsync([serverAdminRole, serverUserRole]);
             await _context.SaveChangesAsync();
             var serverDtoResult = new ServerDto
             {
@@ -139,7 +139,7 @@ namespace DiscordClone.Services.ServerOperations
             await _context.Messages.AddAsync(new Message { MessageId = message.MessageId, Content = message.Content, UserId = message.SenderId, ChannelId = server.Channels.FirstOrDefault(x => x.Name == "Default").ChannelId });
             await _chatHub.SendMessage(message, $"{server.Name}:Default");
             await _context.SaveChangesAsync();
-           
+
             return Result<string>.Success("User successfully joined the server");
         }
 
@@ -272,7 +272,8 @@ namespace DiscordClone.Services.ServerOperations
         {
             var server = await _context.Servers.Include(s => s.Owner)
                 .FirstOrDefaultAsync(s => s.ServerId == serverId);
-            if (server != null) {
+            if (server != null)
+            {
                 if (server.Owner.Id == userId) return true;
             }
             return false;
@@ -280,9 +281,9 @@ namespace DiscordClone.Services.ServerOperations
 
         public async Task<Result<ICollection<ServerDto>>> GetServersByUserIdAsync(Guid userId)
         {
-            var ServerMember = await _context.ServerMembers.Where(x=>x.UserId == userId).ToListAsync();
+            var ServerMember = await _context.ServerMembers.Where(x => x.UserId == userId).ToListAsync();
             var serversDto = new List<ServerDto>();
-            foreach(var serverMember in ServerMember)
+            foreach (var serverMember in ServerMember)
             {
                 var server = await _context.Servers.FindAsync(serverMember.ServerId);
                 serversDto.Add(new ServerDto { Description = server.Description, IconUrl = server.IconUrl, IsPublic = server.IsPublic, Name = server.Name, ServerId = server.ServerId });

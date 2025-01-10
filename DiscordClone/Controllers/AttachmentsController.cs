@@ -1,10 +1,6 @@
-﻿using DiscordClone.Models;
-using DiscordClone.Db;
-using Microsoft.AspNetCore.Http;
+﻿using DiscordClone.Db;
+using DiscordClone.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.IO;
-using System.Threading.Tasks;
 
 [Route("api/[controller]")]
 [ApiController]

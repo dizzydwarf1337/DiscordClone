@@ -1,9 +1,7 @@
 ﻿using DiscordClone.Controllers;
 using DiscordClone.Models.Dtos;
 using DiscordClone.Services.ServerOperations;
-using DiscordClone.Utils;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 
 namespace YourNamespace.Controllers
 {
@@ -20,9 +18,9 @@ namespace YourNamespace.Controllers
 
         // POST: api/channel/create
         [HttpPost("create/{userId}")]
-        public async Task<IActionResult> CreateChannel([FromBody] ChannelCreateDto dto,Guid userId)
+        public async Task<IActionResult> CreateChannel([FromBody] ChannelCreateDto dto, Guid userId)
         {
-            var result = await _channelService.CreateChannelAsync(dto,userId);
+            var result = await _channelService.CreateChannelAsync(dto, userId);
             if (!result.IsSuccess)
             {
                 return BadRequest("Error creating channel.");
@@ -48,9 +46,9 @@ namespace YourNamespace.Controllers
         }
         // POST: api/channel/{id}
         [HttpPost("delete/{userId}")]
-        public async Task<IActionResult> DeleteChannel(ChannelDto dto,[FromQuery]Guid userId)
+        public async Task<IActionResult> DeleteChannel(ChannelDto dto, [FromQuery] Guid userId)
         {
-            var result = await _channelService.DeleteChannelAsync(dto,userId);
+            var result = await _channelService.DeleteChannelAsync(dto, userId);
             if (!result.IsSuccess)
             {
                 return NotFound("Channel not found.");

@@ -9,7 +9,10 @@ import ServerBan from '../Models/ServerBan';
 import UnbanDto from '../Models/UnbanDto';
 import ChannelCreateDto from '../Models/ChannelCreate';
 import { Channel } from '../Models/Channel';
-import { Message } from '../Models/message';
+import  Message  from '../Models/message';
+import FriendRequest from '../Models/FriendRequest';
+import FriendsUsernameRequest from '../Models/FriendsUsernameRequest';
+import PrivateMessage from '../Models/PrivateMessage';
 
 
 axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -71,8 +74,19 @@ const Channels = {
 }
 const Messages = {
     SendMessage: (messageDto: Message, noAuth = false) => requests.post<ApiResponseModel>('message/send', messageDto, noAuth),
+    SendPrivateMessage:(messageDto: PrivateMessage, noAuth = false) => requests.post<ApiResponseModel>('message/send/private',messageDto, noAuth),
     GetAllMessages: (channelId: string, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}`, noAuth),
     GetMessagesFromLastDays: (channelId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}/last/${days}`, noAuth),
+    GetPrivateMessagesFromNDays: (user1: string, user2: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/private/${user1}/${user2}/${days}`, noAuth),
+}
+const Friends = {
+    SendFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/send', friendRequest, noAuth),
+    SendFriendRequestUserName: (friendUsernameRequest: FriendsUsernameRequest, noAuth = false) => requests.post<ApiResponseModel>(`friendship/send/username`,  friendUsernameRequest, noAuth),
+    AcceptFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/accept', friendRequest, noAuth),
+    RejectFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/reject', friendRequest, noAuth),
+    GetUserFriendsById: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friends/${userId}`, noAuth),
+    GetUserFriendRequestsById: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/requests/${userId}`, noAuth),
+
 }
 const agent = {
     Auth,
@@ -80,6 +94,7 @@ const agent = {
     Servers,
     Channels,
     Messages,
+    Friends,
 };
 
 export default agent;

@@ -8,12 +8,12 @@ namespace DiscordClone.Models
     {
         Pending,
         Accepted,
-        Rejected 
+        Rejected
     }
     public class Friendship
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         [ForeignKey("Sender")]
         public Guid SenderId { get; set; }

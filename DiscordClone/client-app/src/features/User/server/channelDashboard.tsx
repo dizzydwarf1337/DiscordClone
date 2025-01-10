@@ -29,7 +29,7 @@ export default observer(function ChannelDashboard() {
                 }}
             >
                 <Typography variant="h6">
-                    Channels
+                    {serverStore.selectedServer?.name}
                 </Typography>
 
                 <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />

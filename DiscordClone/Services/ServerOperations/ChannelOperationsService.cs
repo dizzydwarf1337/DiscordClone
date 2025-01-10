@@ -5,7 +5,6 @@ using DiscordClone.Models.Dtos;
 using DiscordClone.Utils;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace DiscordClone.Services.ServerOperations
 {
@@ -26,7 +25,7 @@ namespace DiscordClone.Services.ServerOperations
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly ChatHub _chatHub;
 
-        public ChannelOperationsService(ApplicationContext context, IHubContext<ChatHub> hubContext,ChatHub chatHub)
+        public ChannelOperationsService(ApplicationContext context, IHubContext<ChatHub> hubContext, ChatHub chatHub)
         {
             _context = context;
             _hubContext = hubContext;
@@ -56,7 +55,7 @@ namespace DiscordClone.Services.ServerOperations
             {
                 return Result<ChannelDto>.Failure("Server not found");
             }
-            
+
             var channel = new Channel
             {
                 Name = channelDto.Name,
@@ -121,7 +120,7 @@ namespace DiscordClone.Services.ServerOperations
 
         public async Task<Result<ICollection<ChannelDto>>> GetChannelsByServerIdAsync(Guid serverId)
         {
-            var server = await  _context.Servers.FindAsync(serverId) ?? throw new Exception("Server Not Found");
+            var server = await _context.Servers.FindAsync(serverId) ?? throw new Exception("Server Not Found");
             var channels = await _context.Channels
                 .Where(c => c.ServerId == serverId)
                 .ToListAsync();
@@ -132,7 +131,7 @@ namespace DiscordClone.Services.ServerOperations
                 ChannelType = c.ChannelType,
                 Topic = c.Topic,
                 CreatedAt = c.CreatedAt
-            }).ToList()); 
+            }).ToList());
         }
         public async Task<Result<string>> JoinChannelAsync(string groupName)
         {
@@ -151,7 +150,7 @@ namespace DiscordClone.Services.ServerOperations
         public async Task<Result<ICollection<string>>> GetUserChannelsGroupNameByUserIdAsync(Guid userId)
         {
             var serverMembers = await _context.ServerMembers.Where(sm => sm.UserId == userId).ToListAsync();
-            var channels = await _context.Channels.Include(x=>x.Server).Where(x => serverMembers.Select(s => s.ServerId).Contains(x.ServerId)).ToListAsync();
+            var channels = await _context.Channels.Include(x => x.Server).Where(x => serverMembers.Select(s => s.ServerId).Contains(x.ServerId)).ToListAsync();
             List<string> result = new List<string>();
             foreach (var channel in channels)
             {

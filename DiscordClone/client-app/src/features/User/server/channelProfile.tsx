@@ -24,8 +24,8 @@ export default observer(function ChannelProfile() {
     return (
         <Box display="flex" flexDirection="column" width="100%" gap="10px" sx={{ m: "20px 10px 20px 10px" }}>
             <Box display="flex" flexDirection="column" overflow="auto" gap="10px" sx={{ backgroundColor: "blue", borderRadius: "20px" }}>
-                {signalRStore.messages.get(channelIdParam!) && signalRStore.messages.get(channelIdParam).length > 0 ? (
-                    signalRStore.messages.get(channelIdParam).map((message) => (
+                {signalRStore.messages.get(channelIdParam!) && signalRStore.messages.get(channelIdParam!)!.length > 0 ? (
+                    signalRStore.messages.get(channelIdParam!)!.map((message) => (
                         <Box key={message.messageId}
                             sx={{
                                 alignSelf: message.senderId === userStore.user!.id ? "flex-end" : "flex-start",

@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
-namespace DiscordClone.Models.Dtos
+﻿namespace DiscordClone.Models.Dtos
 {
     public class ChannelDto
     {

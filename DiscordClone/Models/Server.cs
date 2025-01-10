@@ -1,7 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-using System.Data;
-using System.Threading.Channels;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DiscordClone.Models
 {
@@ -28,14 +26,14 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the owner of the server
         [ForeignKey("Owner")]
-        public Guid OwnerId { get; set; } 
+        public Guid OwnerId { get; set; }
 
         // Owner of the server
         public User Owner { get; set; } = null!;
 
-        
-        
-        
+
+
+
         // Collection of channels within the server
         public ICollection<Channel>? Channels { get; set; }
 

@@ -8,7 +8,7 @@ namespace DiscordClone.Db
 {
     public class ApplicationContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     {
-        public ApplicationContext(DbContextOptions options) : base(options){}
+        public ApplicationContext(DbContextOptions options) : base(options) { }
         public DbSet<User> appUsers { get; set; }
         public DbSet<Server> Servers { get; set; }
         public DbSet<Channel> Channels { get; set; }
@@ -31,7 +31,7 @@ namespace DiscordClone.Db
 
         public DbSet<PinnedMessage> PinnedMessages { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
-
+        public DbSet<PrivateMessage> PrivateMessages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -39,34 +39,34 @@ namespace DiscordClone.Db
 
             modelBuilder.Entity<Server>()
                 .HasOne(s => s.Owner)
-                .WithMany()         
-                .HasForeignKey(s => s.OwnerId) 
+                .WithMany()
+                .HasForeignKey(s => s.OwnerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<DirectMessage>()
                 .HasOne(dm => dm.Sender)
                 .WithMany(u => u.SentDirectMessages)
                 .HasForeignKey(dm => dm.SenderId)
-                .OnDelete(DeleteBehavior.Restrict); 
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<DirectMessage>()
                 .HasOne(dm => dm.Receiver)
                 .WithMany(u => u.ReceivedDirectMessages)
                 .HasForeignKey(dm => dm.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
-            
+
             modelBuilder.Entity<User>()
-            .HasMany(u => u.SentFriendRequests) 
-            .WithOne(f => f.Sender) 
-            .HasForeignKey(f => f.SenderId) 
-            .OnDelete(DeleteBehavior.Restrict); 
+            .HasMany(u => u.SentFriendRequests)
+            .WithOne(f => f.Sender)
+            .HasForeignKey(f => f.SenderId)
+            .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<User>()
                 .HasMany(u => u.ReceivedFriendRequests)
                 .WithOne(f => f.Receiver)
-                .HasForeignKey(f => f.ReceiverId) 
+                .HasForeignKey(f => f.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }
-    
+
 }

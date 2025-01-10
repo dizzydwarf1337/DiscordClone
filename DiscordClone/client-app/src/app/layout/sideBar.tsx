@@ -1,37 +1,16 @@
-import { Box, Button, Checkbox, Dialog, Drawer, TextField, Typography } from "@mui/material";
 import { useStore } from "../stores/store";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
-import { ServerCreateDto } from "../Models/ServerCreate";
-import SignalRStore from "../stores/SignalRStore";
+import JoinServerDialog from "../../features/User/server/joinServerDialog";
+import FriendRequestsDialog from "../../features/User/friends/friendRequestsDialog";
+import { Drawer, Box, Typography } from "@mui/material";
 
 export default observer(function SideBar() {
-    const { userStore, serverStore, signalRStore } = useStore();
+    const { userStore, serverStore, friendStore } = useStore();
     
-    const [open, setOpen] = useState<boolean>(false);
-    const [join, setJoin] = useState<boolean>(true);
-    const [joinServerId, setJoinServerId] = useState<string>("");
-    const [serverCreate, setServerCreate] = useState<ServerCreateDto>({
-        ownerId: userStore.user!.id,
-        name: "",
-        description: "",
-        iconUrl: "",
-        isPublic: true,
-    });
-
-    const handleClose = () => setOpen(false);
-    const handleJoin = async () => {
-        await serverStore.joinServerApi(userStore.user.id, joinServerId);
-        await signalRStore.joinChannel(serverStore.servers.find(x => x.serverId === joinServerId)!.name, "Default");
-        await serverStore.getServersApi(userStore.user!.id);
-        setOpen(false);
-    };
-    const handleCreate = async () => {
-        await serverStore.createServerApi(serverCreate);
-        setOpen(false);
-    };
-
+    const [openServer, setOpenServer] = useState<boolean>(false);
+    const [openFriends, setOpenFriends] = useState<boolean>(false);
     useEffect(() => {
         if (serverStore.servers.length === 0)
             serverStore.getServersApi(userStore.user!.id).then(response => console.log(response));
@@ -67,61 +46,44 @@ export default observer(function SideBar() {
                                 </Link>
                             )))}
                     </Box>
-                    <Box display="flex" flexDirection="column" gap="10px">
+                    <Box position="relative" display="flex" flexDirection="column" gap="10px">
                         <Box sx={{
                             borderRadius: "20px", height: "50px", width: "50px", fontSize: "10px", display: "flex",
-                            alignItems: "center", justifyContent: "center", color: "black",
+                            alignItems: "center", justifyContent: "center", color: "black", textAlign:"center",
                             cursor: "pointer", backgroundColor: "lightgray",
-                        }}>
-                            Add Friend
+                        }}
+                            onClick={() => setOpenFriends(true)}
+                        >
+                            <Typography component="p" variant="caption">Add Friends</Typography>
+                            {friendStore.friendRequests.length === 0 ? (null) :
+                                <Box position="absolute" width="10px" height="10px" borderRadius="50%"
+                                    sx={{
+                                        backgroundColor: friendStore.friendRequests.length === 0 ? "transparent" : "red",
+                                        color: "white", fontSize: "8px", display: "flex",
+                                        alignItems: "center", justifyContent: "center",
+                                        top: "0px", right: "0px"
+                                    }}
+                                >
+                                    {friendStore.friendRequests.length}
+                                </Box>
+                            }
                         </Box>
+
                         <Box sx={{
                             borderRadius: "20px", height: "50px", width: "50px", fontSize: "10px", display: "flex",
                             alignItems: "center", justifyContent: "center", color: "black",
                             cursor: "pointer", backgroundColor: "lightgray",
                         }}
-                            onClick={() => setOpen(true)}
+                            onClick={() => setOpenServer(true)}
                         >
-                            Add Server
+                            Servers
                         </Box>
                     </Box>
                 </Box>
             </Drawer>
-
-            <Dialog open={open} onClose={handleClose}>
-                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" width="300px" height={join ? "300px" : "400px"}>
-                    {join ? (
-                        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p="10px 20px" gap="20px">
-                            <Typography variant="h6" alignSelf="center">Join Server</Typography>
-                            <TextField label="Server Id" value={joinServerId} onChange={(e) => setJoinServerId(e.target.value)} />
-                            <Button variant="contained" color="success" onClick={handleJoin}>Join</Button>
-                            <Box
-                                sx={{ cursor: "pointer" }}
-                                onClick={() => setJoin(false)}
-                            >
-                                <Typography variant="body2" >Want to create server?</Typography>
-                            </Box>
-                        </Box>
-                    ) : (
-                        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" p="10px 20px" gap="20px">
-                            <Typography variant="h6" alignSelf="center">Create Server</Typography>
-                            <TextField label="Server Name*" value={serverCreate.name} onChange={(e) => setServerCreate({ ...serverCreate, name: e.target.value })} />
-                            <TextField label="Server Description" value={serverCreate.description} onChange={(e) => setServerCreate({ ...serverCreate, description: e.target.value })} />
-                            <Box display="flex" alignItems="center" justifyItems="center">
-                                <Typography variant="body2">Is public?</Typography>
-                                <Checkbox checked={serverCreate.isPublic} color="success" onChange={(e) => setServerCreate({ ...serverCreate, isPublic: e.target.checked })} />
-                            </Box>
-                            <Button variant="contained" color="success" onClick={handleCreate}>Create Server</Button>
-                            <Box
-                                sx={{ cursor: "pointer" }}
-                                onClick={() => setJoin(true)}
-                            >
-                                <Typography variant="body2" >Join server instead</Typography>
-                            </Box>
-                        </Box>
-                    )}
-                </Box>
-            </Dialog>
+            <JoinServerDialog open={openServer} onClose={() => setOpenServer(false)} />
+            <FriendRequestsDialog open={openFriends} onClose={() => setOpenFriends(false)} />
+            
         </>
     );
 });

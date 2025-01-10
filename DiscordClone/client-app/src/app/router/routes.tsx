@@ -7,23 +7,29 @@ import LoginDashboard from "../../features/User/userAuth/loginDashboard";
 import ProfileSetting from "../../features/User/userSettings/profileSetting";
 import ChannelDashboard from "../../features/User/server/channelDashboard";
 import ChannelProfile from "../../features/User/server/channelProfile";
+import FriendChatProfile from "../../features/User/friends/friendChatProfile";
+import FriendsDashboard from "../../features/User/friends/friendsDashboard";
 
 export const routes: RouteObject[] = [
     {
         path: '/', 
         element: <App />,
         children: [
-            { index: true, element: <HomePage /> }, 
+            { index: true, element: <HomePage /> },
             { path: 'login', element: <LoginDashboard /> },
             {
-                path: 'server/:serverId', 
+                path: 'server/:serverId',
                 element: <ChannelDashboard />,
                 children: [
-                    { path: ':channelIdParam', element: <ChannelProfile /> }, 
+                    { path: ':channelIdParam', element: <ChannelProfile /> },
                 ],
             },
             {
-                path: 'main', element: <App />
+                path: 'main', element: <FriendsDashboard />, children: 
+                    [
+                        { path: "friend/:friendId", element: <FriendChatProfile /> },
+                    ]
+                
             },
         ],
     },

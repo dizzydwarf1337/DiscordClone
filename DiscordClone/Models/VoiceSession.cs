@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DiscordClone.Models
 {
@@ -25,7 +25,7 @@ namespace DiscordClone.Models
 
         // Foreign key referencing the user participating in the voice session
         [ForeignKey("User")]
-        public Guid UserId { get; set; } 
+        public Guid UserId { get; set; }
 
         // The user participating in the voice session
         public User User { get; set; } = null!;

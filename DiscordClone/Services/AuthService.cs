@@ -1,10 +1,9 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using DiscordClone.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using DiscordClone.Models;
-using Microsoft.AspNetCore.Identity;
 
 namespace DiscordClone.Services
 {
@@ -14,7 +13,7 @@ namespace DiscordClone.Services
         private readonly UserManager<User> _userManager;
         // IConfiguration is used to access configuration settings, such as JWT settings
         private readonly IConfiguration _configuration;
-       
+
         // Constructor for dependency injection
         public AuthService(UserManager<User> userManager, IConfiguration configuration)
         {
@@ -59,7 +58,7 @@ namespace DiscordClone.Services
             // Create a token handler to generate the JWT token
             var tokenHandler = new JwtSecurityTokenHandler();
             var token = tokenHandler.CreateToken(tokenDescriptor);// Create the token using the descriptor
-           
+
             // Return the serialized JWT token as a string
             return tokenHandler.WriteToken(token);
         }

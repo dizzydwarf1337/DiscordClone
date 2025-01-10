@@ -1,87 +1,61 @@
-﻿using DiscordClone.Models;
-using DiscordClone.Db;
-using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
+﻿using DiscordClone.Db;
+using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
+using DiscordClone.Utils;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiscordClone.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FriendshipController : ControllerBase
+    public class FriendshipController : BaseController
     {
         private readonly FriendshipService _friendshipService;
-        private readonly ApplicationContext _context;
 
-        public FriendshipController(FriendshipService friendshipService, ApplicationContext context)
+
+        public FriendshipController(FriendshipService friendshipService)
         {
             _friendshipService = friendshipService;
-            _context = context;
         }
 
         // Endpoint to send a friend request
         [HttpPost("send")]
         public async Task<IActionResult> SendFriendRequest([FromBody] FriendRequestDto request)
         {
-           bool requestExists = await _friendshipService.SendFriendRequestAsync(request.SenderId, request.ReceiverId);
+            return HandleResult( await _friendshipService.SendFriendRequestAsync(request.SenderId, request.ReceiverId));
 
-            if (requestExists)
-                {
-                    return BadRequest(new { success = false, message = "Friendship request already exists." });
-                }
-
-            return Ok(new { success = true, message = "Friend request sent successfully." });
         }
-
+        [HttpPost("send/userName")]
+        public async Task<IActionResult> SendFriendRequestByUserName(FriendsUsernameRequestDto friendsUsernameRequest)
+        {
+            return HandleResult(await _friendshipService.SendFriendRequestByUserName(friendsUsernameRequest));
+        }
         // Endpoint to accept a friend request
         [HttpPost("accept")]
         public async Task<IActionResult> AcceptFriendRequest([FromBody] FriendRequestDto request)
         {
-            bool success = await _friendshipService.AcceptFriendRequestAsync(request.SenderId, request.ReceiverId);
-
-            if (!success)
-            {
-                return NotFound(new { success = false, message = "Friendship request not found or already accepted." });
-            }
-
-            return Ok(new { success = true, message = "Friend request accepted." });
+            return HandleResult(await _friendshipService.AcceptFriendRequestAsync(request.SenderId, request.ReceiverId));
         }
 
         // Endpoint to reject a friend request
         [HttpPost("reject")]
         public async Task<IActionResult> RejectFriendRequest([FromBody] FriendRequestDto request)
         {
-            bool success = await _friendshipService.RejectFriendRequestAsync(request.SenderId, request.ReceiverId);
+            return HandleResult( await _friendshipService.RejectFriendRequestAsync(request.SenderId, request.ReceiverId));
 
-            if (!success)
-            {
-                return NotFound(new { success = false, message = "Friendship request not found." });
-            }
-
-            return Ok(new { success = true, message = "Friend request rejected." });
         }
 
         // Endpoint to get a user's friends by their username
-        [HttpGet("friends/{userName}")]
-        public async Task<IActionResult> GetUserFriendsByName(string userName)
+        [HttpGet("friends/{userId}")]
+        public async Task<IActionResult> GetUserFriendsById(Guid userId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName);
-            if (user == null)
-            {
-                return NotFound(new { success = false, message = "User not found." });
-            }
-
-            List<User> friends = await _friendshipService.GetUserFriendsAsync(user.Id);
-
-            if (friends == null || friends.Count == 0)
-            {
-                return NotFound(new { success = false, message = "No friends found." });
-            }
-
-            return Ok(new { success = true, friends });
+            return HandleResult(await _friendshipService.GetUserFriendsAsync(userId));
+        }
+        [HttpGet("requests/{userId}")]
+        public async Task<IActionResult> GetUserFriendRequests(Guid userId)
+        {
+            return HandleResult(await _friendshipService.GetFriendsRequests(userId));
         }
     }
 }

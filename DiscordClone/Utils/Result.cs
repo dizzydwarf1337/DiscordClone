@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace DiscordClone.Utils
+﻿namespace DiscordClone.Utils
 {
     public class Result<T>
     {

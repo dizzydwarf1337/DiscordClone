@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using DiscordClone.Models.Dtos;
+﻿using DiscordClone.Models.Dtos;
 using DiscordClone.Services.ServerOperations;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace DiscordClone.Controllers
@@ -26,7 +26,7 @@ namespace DiscordClone.Controllers
 
         [HttpPost("join/{userId}/{serverId}")]
         public async Task<IActionResult> JoinServer(Guid userId, Guid serverId)
-            {
+        {
             var result = await _serverOperationsService.JoinServerAsync(userId, serverId);
             return HandleResult(result);
         }
@@ -40,10 +40,10 @@ namespace DiscordClone.Controllers
 
         [HttpDelete("delete/{userId}/{serverId}")]
         public async Task<IActionResult> DeleteServer([FromQuery] Guid userId, [FromQuery] Guid serverId)
-            {
+        {
             var result = await _serverOperationsService.DeleteServerAsync(userId, serverId);
             return HandleResult(result);
-            }
+        }
 
         [HttpPost("ban")]
         public async Task<IActionResult> BanUser(ServerBanDto serverban)
