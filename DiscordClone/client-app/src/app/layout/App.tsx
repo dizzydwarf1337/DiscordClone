@@ -2,13 +2,13 @@ import { useEffect } from 'react';
 import { useStore } from '../stores/store';
 import HomePage from './homePage';
 import NavBar from './navBar';
-import SideBar from './sideBar';
 import './styles.css';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AdminPanel from '../../features/Admin/AdminPanel';
 import { ThemeProvider } from '@emotion/react';
 import theme from '../theme/theme';
 import { Box } from '@mui/material';
+import SideBar from './sideBar';
 
 function App() {
 
@@ -31,12 +31,15 @@ function App() {
                         <>
                             {userStore.user?.role === 'Admin' ? (
                                 <AdminPanel />
-                            ) : (
+                                ) : (
                                 <>
-                                
-                                    <NavBar />
-                                            <SideBar />
-                                            <Box width="100%" height="100%" flex="display" justifyContent="center" alignItems="center">
+                                    <Box>
+                                        <NavBar />
+                                    </Box>
+                                    <Box>
+                                        <SideBar />
+                                            </Box>
+                                     <Box pl="62px" mt="62px">
                                         <Outlet />
                                     </Box>
                                 </>

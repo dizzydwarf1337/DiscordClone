@@ -1,114 +1,50 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using DiscordClone.Models;
-using DiscordClone.Db; 
-using Microsoft.EntityFrameworkCore;
+﻿using DiscordClone.Models.Dtos;
+using DiscordClone.Services;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 
 namespace DiscordClone.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class MessagesController : ControllerBase
+    public class MessageController : BaseController
     {
-        private readonly ApplicationContext _context; // Używamy ApplicationContext
+        private readonly MessageService _messageService;
 
-        public MessagesController(ApplicationContext context)
+        public MessageController(MessageService messageService)
         {
-            _context = context;
+            _messageService = messageService;
         }
 
-        // GET: api/messages
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Message>>> GetMessages()
+        // POST: api/message/send
+        [HttpPost("send")]
+        public async Task<IActionResult> SendMessage( MessageDto messageDto)
         {
-            return await _context.Messages
-                .Include(m => m.User)
-                .Include(m => m.Channel)
-                .ToListAsync();
-        }
-
-        // GET: api/messages/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Message>> GetMessage(Guid id)
-        {
-            var message = await _context.Messages 
-                .Include(m => m.User)
-                .Include(m => m.Channel)
-                .FirstOrDefaultAsync(m=>m.MessageId==id);
-
-            if (message == null)
-            {
-                return NotFound();
-            }
-
-            return message;
-        }
-
-        // POST: api/messages
-        [HttpPost]
-        public async Task<ActionResult<Message>> PostMessage(Message message)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            _context.Messages.Add(message);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetMessage), new { id = message.MessageId }, message);
-        }
-
-        // PUT: api/messages/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutMessage(Guid id, Message message)
-        {
-            if (id != message.MessageId)
-            {
-                return BadRequest();
-            }
-
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            _context.Entry(message).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                await _messageService.SendMessageAsync(messageDto);
+                return Ok(new { message = "Message sent successfully" });
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!MessageExists(id))
-                {
-                    return NotFound();
-                }
-                throw;
+                return BadRequest(new { error = ex.Message });
             }
-
-            return NoContent();
         }
 
-        // DELETE: api/messages/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMessage(Guid id)
+        // GET: api/message/{channelId}
+        [HttpGet("{channelId}")]
+        public async Task<IActionResult> GetAllMessages(Guid channelId)
         {
-            var message = await _context.Messages.FindAsync(id);
-            if (message == null)
-            {
-                return NotFound();
-            }
+            return HandleResult(await _messageService.GetAllMessagesAsync(channelId));
 
-            _context.Messages.Remove(message);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
         }
-
-        private bool MessageExists(Guid id)
+        // GET: api/message/{channelId}/last/{days}
+        [HttpGet("{channelId}/last/{days}")]
+        public async Task<IActionResult> GetMessagesFromLastNDays(Guid channelId, int days)
         {
-            return _context.Messages.Any(e => e.MessageId == id);
+            var result = await _messageService.GetMessagesFromLastNDays(channelId, days);
+            return HandleResult(result);
         }
     }
 }

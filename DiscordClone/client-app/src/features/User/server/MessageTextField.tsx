@@ -1,41 +1,49 @@
 import { Box, Button, TextField } from "@mui/material";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { useStore } from "../../../app/stores/store";
-import ChatMessage from "../../../app/Models/ChatMessage";
 import { v4 as uuidv4 } from 'uuid';
+import Message from "../../../app/Models/message";
+import { observer } from "mobx-react-lite";
+import { useParams } from "react-router-dom";
 
-export default function MessageTextField() {
-    const { signalRStore, userStore } = useStore();
+export default observer(function MessageTextField() {
+    const { channelStore, userStore, signalRStore, serverStore } = useStore(); 
     const [content, setContent] = useState("");
-
+    const { channelIdParam } = useParams();
+    useEffect(() => {
+        console.log(channelIdParam);
+        channelStore.getChannelByIdApi(channelIdParam!);
+    }, [channelIdParam])
     const handleMessageChange = (e: ChangeEvent<HTMLInputElement>) => {
         setContent(e.target.value);
     };
 
-    const handleSend = () => {
-        if (!content.trim()) return; 
+    const handleSend = async () => {
+        if (!content.trim()) return;
 
-        const message: ChatMessage = {
+        const channelId = channelStore.selectedChannel!.channelId || channelIdParam!;
+
+        const message: Message = {
             messageId: uuidv4(),
             content: content.trim(),
-            createdAt: new Date(),
-            isEdited: false,
-            userName: userStore.user?.username || "Anonymous",
-            channelId: "cfe759f0-fcc4-41b2-a0d7-941f07b3a88c",
-            serverId: "f8ed3d61-8b96-473c-b4d0-a6595992d0a1",
+            createdAt: new Date().toISOString(),
+            senderName: userStore.user?.username || "Anonymous",
+            senderId: userStore.user!.id,
+            channelId,
         };
 
-        signalRStore.sendMessage({
-            userName: "user" as string,
-            message: message.content || "text" as string,
-            serverName: "Server1" as string,
-            channelName: "General" as string
-        });
+        await signalRStore.sendMessage(message, channelStore.selectedChannel!.name, serverStore.selectedServer!.name);  
+
         setContent(""); 
     };
 
     return (
-        <Box display="flex" gap={2} alignItems="center" width="100%">
+        <Box
+            display="flex"
+            gap={2}
+            alignItems="center"
+            width="100%"
+        >
             <TextField
                 fullWidth
                 value={content}
@@ -43,9 +51,12 @@ export default function MessageTextField() {
                 placeholder="Type your message..."
                 onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                        e.preventDefault(); 
+                        e.preventDefault();
                         handleSend();
                     }
+                }}
+                sx={{
+                    flexGrow: 1,
                 }}
             />
             <Button variant="contained" onClick={handleSend}>
@@ -53,4 +64,4 @@ export default function MessageTextField() {
             </Button>
         </Box>
     );
-}
+});

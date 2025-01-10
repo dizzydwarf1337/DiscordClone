@@ -5,37 +5,39 @@ import UserProfile from "../../features/User/userSettings/userProfile";
 import HomePage from "../layout/homePage";
 import LoginDashboard from "../../features/User/userAuth/loginDashboard";
 import ProfileSetting from "../../features/User/userSettings/profileSetting";
-import Default from "../../features/User/server/default";
-
+import ChannelDashboard from "../../features/User/server/channelDashboard";
+import ChannelProfile from "../../features/User/server/channelProfile";
 
 export const routes: RouteObject[] = [
     {
-        path: '/',
+        path: '/', 
         element: <App />,
         children: [
-            { index: true, element: <HomePage /> },
-            { path: 'main', element: <App /> },
+            { index: true, element: <HomePage /> }, 
             { path: 'login', element: <LoginDashboard /> },
-            { path: 'default', element: <Default /> },
-        ]
+            {
+                path: 'server/:serverId', 
+                element: <ChannelDashboard />,
+                children: [
+                    { path: ':channelIdParam', element: <ChannelProfile /> }, 
+                ],
+            },
+            {
+                path: 'main', element: <App />
+            },
+        ],
     },
     {
-        path: '/adminPanel',
+        path: '/adminPanel', 
         element: <AdminPanel />,
-        children: [
-        ]
     },
     {
-        path: '/profile',
+        path: '/profile', 
         element: <UserProfile />,
         children: [
-            {
-                path: '/profile',
-                element: <ProfileSetting />,
-            },
-        ]
+            { path: '/profile', element: <ProfileSetting /> }, 
+        ],
     },
 ];
-
 
 export const router = createBrowserRouter(routes);

@@ -4,6 +4,12 @@ import { LoginModel } from '../Models/LoginModel';
 import { User } from '../Models/user';
 import ApiResponseModel from '../Models/ApiResponseModel';
 import RegisterModel from '../Models/RegisterModel';
+import { ServerCreateDto } from '../Models/ServerCreate';
+import ServerBan from '../Models/ServerBan';
+import UnbanDto from '../Models/UnbanDto';
+import ChannelCreateDto from '../Models/ChannelCreate';
+import { Channel } from '../Models/Channel';
+import { Message } from '../Models/message';
 
 
 axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -46,71 +52,34 @@ const Users = {
     updateUser: (user: User) => requests.put<ApiResponseModel>(`/user/${user.id}`, user),
     updateAvatar: (imageFile: FormData, noAuth = false) => requests.post<ApiResponseModel>('/user/update-avatar', imageFile, noAuth),
 };
-
+const Servers = {
+    CreateServer: (serverCreate: ServerCreateDto, noAuth = false) => requests.post<ApiResponseModel>('server/create', serverCreate,noAuth),
+    JoinServer: (userId: string, serverId: string, noAuth = false) => requests.post<ApiResponseModel>(`server/join/${userId}/${serverId}`, noAuth),
+    LeaveServer: (userId: string, serverId: string, noAuth = false) => requests.post<ApiResponseModel>(`server/leave/${userId}/${serverId}`, noAuth),
+    DeleteServer: (userId: string, serverId: string, noAuth = false) => requests.delete<ApiResponseModel>(`server/delete/${userId}/${serverId}`, noAuth),
+    BanUser: (serverBan: ServerBan, noAuth = false) => requests.post<ApiResponseModel>('server/ban', serverBan, noAuth),
+    UnBanUser: (unbanDto: UnbanDto, noAuth = false) => requests.post<ApiResponseModel>('server/unban', unbanDto, noAuth),
+    GetServersByUserId: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`server/user/${userId}`, noAuth),
+    GetServerById: (serverId: string, noAuth = false) => requests.get<ApiResponseModel>(`server/${serverId}`, noAuth),
+}
+const Channels = {
+    CreateChannel: (createChannel: ChannelCreateDto, userId: string, noAuth = false) => requests.post<ApiResponseModel>(`Channel/create/${userId}`, createChannel, noAuth),
+    GetChannelById: (channelId: string, noAuth = false) => requests.get<ApiResponseModel>(`Channel/${channelId}`, noAuth),
+    GetChannelsByServerId: (serverId: string, noAuth = false) => requests.get<ApiResponseModel>(`Channel/server/${serverId}`, noAuth),
+    DeleteChannel: (channelDto: Channel, userId: string, noAuth = false) => requests.post<ApiResponseModel>(`Channel/${userId}`, channelDto, noAuth),
+    GetUserChannels: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`Channel/user/${userId}`, noAuth),
+}
+const Messages = {
+    SendMessage: (messageDto: Message, noAuth = false) => requests.post<ApiResponseModel>('message/send', messageDto, noAuth),
+    GetAllMessages: (channelId: string, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}`, noAuth),
+    GetMessagesFromLastDays: (channelId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}/last/${days}`, noAuth),
+}
 const agent = {
     Auth,
     Users,
-    Servers: {
-        createServer: async (serverData: {
-            name: string,
-            description?: string,
-            ownerId: string,
-            isPublic: boolean
-        }) => {
-            try {
-                const response = await axios.post('/server/create', serverData);
-                return {
-                    success: true,
-                    data: response.data,
-                    message: 'Server created successfully'
-                };
-            } catch (error) {
-                return {
-                    success: false,
-                    data: null,
-                    message: error.response?.data?.message || 'Failed to create server'
-                };
-            }
-        },
-    },
-    getUserServers: async (userId: string) => {
-        try {
-            const response = await axios.get(`/server/user/${userId}`);
-            return {
-                success: true,
-                data: response.data,
-                message: 'Servers retrieved successfully'
-            };
-        } catch (error) {
-            return {
-                success: false,
-                data: null,
-                message: error.response?.data?.message || 'Failed to retrieve servers'
-            };
-        }
-    },
-    Channels: {
-        createChannel: async (channelData: {
-            name: string,
-            serverId: string,
-            channelType: string
-        }) => {
-            try {
-                const response = await axios.post('/channel/create', channelData);
-                return {
-                    success: true,
-                    data: response.data,
-                    message: 'Channel created successfully'
-                };
-            } catch (error) {
-                return {
-                    success: false,
-                    data: null,
-                    message: error.response?.data?.message || 'Failed to create channel'
-                };
-            }
-        },
-    }
+    Servers,
+    Channels,
+    Messages,
 };
 
 export default agent;

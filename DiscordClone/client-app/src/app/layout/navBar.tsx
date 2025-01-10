@@ -2,10 +2,9 @@ import { AppBar, Box, Button, CircularProgress, Toolbar, Typography } from "@mui
 import "./styles.css";
 import { useStore } from "../stores/store";
 import { Link, useNavigate } from "react-router-dom";
-import { CreateServerModal } from './CreateServerModal';
 
 export default function NavBar() {
-    const { userStore } = useStore();
+    const { userStore} = useStore();
     const navigate = useNavigate()
     const handleOnClick = async () => {
         await userStore.LogOut();
@@ -14,8 +13,8 @@ export default function NavBar() {
 
     return (
         <>
-            <AppBar sx={{ backgroundColor: "secondary.main", zIndex: 3, pl: "50px" }}>
-                <Toolbar sx={{ justifyContent: "space-between" }}>
+            <AppBar sx={{ backgroundColor: "secondary.main", zIndex: 3, pl: { xs:"10px",md:"30px",lg:"80px",xl:"100px"}, mb:"64px" }}>
+                <Toolbar sx={{ justifyContent: "space-between"}}>
                     <Box display="flex" justifyContent="right">
                         <Typography>Discord Clone</Typography>
                     </Box>
@@ -35,7 +34,6 @@ export default function NavBar() {
                             >
                                 Logout
                             </Button>
-                            <CreateServerModal />
                         </Box>
                     )}
                 </Toolbar>

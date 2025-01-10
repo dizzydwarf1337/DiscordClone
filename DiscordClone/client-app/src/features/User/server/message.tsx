@@ -1,24 +1,26 @@
 import { Box, Typography } from "@mui/material";
-import ChatMessage from "../../../app/Models/ChatMessage";
+import Message from "../../../app/Models/message";
 
-
-export interface Props  {
-    message: ChatMessage;
+export interface Props {
+    message: Message;
 }
-export default function Message({message}:Props) {
 
-    console.log(message);
+export default function Message({ message }: Props) {
     return (
-        <Box display="flex" flexDirection="row" justifyContent="flex-end" alignItems="center" sx={{ borderRadius: "10px", boxShadow: "1px 1px 1px 1px grey", m: "10px", width: "1300px" }}>
-            <Box>
-                <Typography variant="body2">{message.userName}</Typography> - <Typography variant="body2">{new Date(message.createdAt).toLocaleString()}</Typography>
+        <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" width="90%" border="solid red 1px" borderRadius="10px">
+            <Box display="flex" flexDirection="column" marginRight="15px">
+                <Typography variant="body2" sx={{ fontWeight: "bold", color: "#fff" }}>
+                    {message.senderName}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "#b0b3b8", fontSize: "0.9rem" }}>
+                    {new Date(message.createdAt).toLocaleString()}
+                </Typography>
             </Box>
             <Box>
-                <Typography variant="body1">{message.content}</Typography>
-            </Box>
-            <Box>
-                <Typography>{message.isEdited ? "Edited" : ""}</Typography>
+                <Typography variant="body1" sx={{ color: "#e0e0e0", wordBreak: "break-word", whiteSpace: "pre-line" }}>
+                    {message.content}
+                </Typography>
             </Box>
         </Box>
-    )
+    );
 }
