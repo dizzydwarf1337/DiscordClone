@@ -103,14 +103,12 @@ namespace DiscordClone.Controllers
         }
 
         [HttpPost("logout")]
-        [Authorize] // Require user to be authorized to log out
+        [Authorize]
         public async Task<IActionResult> Logout()
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get the user ID from the JWT token
-
-                // Remove the token from the database
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); 
                 var token = await _context.UserTokens
                     .FirstOrDefaultAsync(t => t.UserId == Guid.Parse(userId) && t.LoginProvider == "Jwt" && t.Name == "Bearer");
 
@@ -128,7 +126,7 @@ namespace DiscordClone.Controllers
                 }
 
             }
-            catch (Exception ex) // Handle any exceptions
+            catch (Exception ex) 
             {
                 _logger.LogError(ex, "An error occurred while logging out");
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));

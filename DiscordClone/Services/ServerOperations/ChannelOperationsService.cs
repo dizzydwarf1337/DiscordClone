@@ -11,32 +11,52 @@ namespace DiscordClone.Services.ServerOperations
 {
     public interface IChannelOperationsService
     {
-        Task<Result<ChannelDto>> CreateChannelAsync(ChannelCreateDto channelDto);
-        Task<Result<string>> DeleteChannelAsync(ChannelDto channelDto);
-        Task<Result<string>> DeleteChannelByIdAsync(Guid Id);
-        Task<Result<List<MessageDto>>> GetAllMessagesAsync(Guid channelId);
-        Task<Result<List<MessageDto>>> GetMessagesFromLastNDays(Guid channelId, int days);
+        Task<Result<ChannelDto>> CreateChannelAsync(ChannelCreateDto channelDto, Guid userId);
+        Task<Result<string>> DeleteChannelAsync(ChannelDto channelDto, Guid userId);
+        Task<Result<string>> DeleteChannelByIdAsync(Guid Id, Guid userId);
+        Task<Result<ChannelDto>> GetChannelByIdAsync(Guid channelId);
+        Task<Result<ICollection<ChannelDto>>> GetChannelsByServerIdAsync(Guid serverId);
+        Task<Result<string>> JoinChannelAsync(string groupName);
+        Task<Result<ICollection<String>>> GetUserChannelsGroupNameByUserIdAsync(Guid userId);
     }
 
     public class ChannelOperationsService : IChannelOperationsService
     {
         private readonly ApplicationContext _context;
         private readonly IHubContext<ChatHub> _hubContext;
+        private readonly ChatHub _chatHub;
 
-        public ChannelOperationsService(ApplicationContext context, IHubContext<ChatHub> hubContext)
+        public ChannelOperationsService(ApplicationContext context, IHubContext<ChatHub> hubContext,ChatHub chatHub)
         {
             _context = context;
             _hubContext = hubContext;
+            _chatHub = chatHub;
         }
-
-        public async Task<Result<ChannelDto>> CreateChannelAsync(ChannelCreateDto channelDto)
+        public async Task<Result<ChannelDto>> GetChannelByIdAsync(Guid channelId)
+        {
+            var channel = await _context.Channels.FindAsync(channelId);
+            if (channel == null)
+            {
+                return Result<ChannelDto>.Failure("Channel not found");
+            }
+            var channelDto = new ChannelDto
+            {
+                ChannelId = channel.ChannelId,
+                Name = channel.Name,
+                ChannelType = channel.ChannelType,
+                Topic = channel.Topic,
+                CreatedAt = channel.CreatedAt
+            };
+            return Result<ChannelDto>.Success(channelDto);
+        }
+        public async Task<Result<ChannelDto>> CreateChannelAsync(ChannelCreateDto channelDto, Guid userId)
         {
             var server = await _context.Servers.FindAsync(channelDto.ServerId);
             if (server == null)
             {
                 return Result<ChannelDto>.Failure("Server not found");
             }
-
+            
             var channel = new Channel
             {
                 Name = channelDto.Name,
@@ -58,10 +78,13 @@ namespace DiscordClone.Services.ServerOperations
                 CreatedAt = channel.CreatedAt
             };
 
+            await _hubContext.Clients.Group(channelDto.ServerId.ToString())
+                .SendAsync("ChannelCreated", channelDtoResult);
+
             return Result<ChannelDto>.Success(channelDtoResult);
         }
 
-        public async Task<Result<string>> DeleteChannelAsync(ChannelDto channelDto)
+        public async Task<Result<string>> DeleteChannelAsync(ChannelDto channelDto, Guid userId)
         {
             var channel = await _context.Channels.FindAsync(channelDto.ChannelId);
             if (channel == null)
@@ -69,13 +92,17 @@ namespace DiscordClone.Services.ServerOperations
                 return Result<string>.Failure("Channel not found");
             }
 
+
             _context.Channels.Remove(channel);
             await _context.SaveChangesAsync();
+
+            await _hubContext.Clients.Group(channel.ServerId.ToString())
+                .SendAsync("ChannelDeleted", channelDto);
 
             return Result<string>.Success("Channel removed successfully!");
         }
 
-        public async Task<Result<string>> DeleteChannelByIdAsync(Guid Id)
+        public async Task<Result<string>> DeleteChannelByIdAsync(Guid Id, Guid userId)
         {
             var channel = await _context.Channels.FindAsync(Id);
             if (channel == null)
@@ -86,52 +113,51 @@ namespace DiscordClone.Services.ServerOperations
             _context.Channels.Remove(channel);
             await _context.SaveChangesAsync();
 
+            await _hubContext.Clients.Group(channel.ServerId.ToString())
+                .SendAsync("ChannelDeleted", new { ChannelId = Id });
+
             return Result<string>.Success("Channel removed successfully!");
         }
 
-        public async Task<Result<List<MessageDto>>> GetAllMessagesAsync(Guid channelId)
+        public async Task<Result<ICollection<ChannelDto>>> GetChannelsByServerIdAsync(Guid serverId)
         {
-            var messages = await _context.Messages
-                .Where(m => m.ChannelId == channelId)
+            var server = await  _context.Servers.FindAsync(serverId) ?? throw new Exception("Server Not Found");
+            var channels = await _context.Channels
+                .Where(c => c.ServerId == serverId)
                 .ToListAsync();
-
-            if (messages == null || messages.Count == 0)
+            return Result<ICollection<ChannelDto>>.Success(channels.Select(c => new ChannelDto
             {
-                return Result<List<MessageDto>>.Failure("No messages found for this channel");
+                ChannelId = c.ChannelId,
+                Name = c.Name,
+                ChannelType = c.ChannelType,
+                Topic = c.Topic,
+                CreatedAt = c.CreatedAt
+            }).ToList()); 
+        }
+        public async Task<Result<string>> JoinChannelAsync(string groupName)
+        {
+            try
+            {
+                await _chatHub.JoinChannel(groupName);
+                return Result<string>.Success("Joined channel successfully!");
             }
-
-            var messageDtos = messages.Select(m => new MessageDto
+            catch (Exception e)
             {
-                MessageId = m.MessageId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                SenderId = m.UserId
-            }).ToList();
+                return Result<string>.Failure(e.Message);
 
-            return Result<List<MessageDto>>.Success(messageDtos);
+            }
         }
 
-        public async Task<Result<List<MessageDto>>> GetMessagesFromLastNDays(Guid channelId, int days)
+        public async Task<Result<ICollection<string>>> GetUserChannelsGroupNameByUserIdAsync(Guid userId)
         {
-            var fromDate = DateTime.UtcNow.AddDays(-days);
-            var messages = await _context.Messages
-                .Where(m => m.ChannelId == channelId && m.CreatedAt >= fromDate)
-                .ToListAsync();
-
-            if (messages == null || messages.Count == 0)
+            var serverMembers = await _context.ServerMembers.Where(sm => sm.UserId == userId).ToListAsync();
+            var channels = await _context.Channels.Include(x=>x.Server).Where(x => serverMembers.Select(s => s.ServerId).Contains(x.ServerId)).ToListAsync();
+            List<string> result = new List<string>();
+            foreach (var channel in channels)
             {
-                return Result<List<MessageDto>>.Failure($"No messages found in the last {days} days");
+                result.Add($"{channel.Server.Name}:{channel.Name}");
             }
-
-            var messageDtos = messages.Select(m => new MessageDto
-            {
-                MessageId = m.MessageId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                SenderId = m.UserId
-            }).ToList();
-
-            return Result<List<MessageDto>>.Success(messageDtos);
+            return Result<ICollection<string>>.Success(result);
         }
     }
 }

@@ -1,12 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
 using DiscordClone.Services.ServerOperations;
-using DiscordClone.Utils;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Diagnostics;
+
 
 namespace DiscordClone.Controllers
 {
@@ -29,21 +24,21 @@ namespace DiscordClone.Controllers
             return HandleResult(result);
         }
 
-        [HttpPost("join")]
-        public async Task<IActionResult> JoinServer([FromQuery] Guid userId, [FromQuery] Guid serverId)
+        [HttpPost("join/{userId}/{serverId}")]
+        public async Task<IActionResult> JoinServer(Guid userId, Guid serverId)
             {
             var result = await _serverOperationsService.JoinServerAsync(userId, serverId);
             return HandleResult(result);
         }
 
-        [HttpPost("leave")]
+        [HttpPost("leave/{userId}/{serverId}")]
         public async Task<IActionResult> LeaveServer([FromQuery] Guid userId, [FromQuery] Guid serverId)
         {
             var result = await _serverOperationsService.LeaveServerAsync(userId, serverId);
             return HandleResult(result);
         }
 
-        [HttpDelete("delete")]
+        [HttpDelete("delete/{userId}/{serverId}")]
         public async Task<IActionResult> DeleteServer([FromQuery] Guid userId, [FromQuery] Guid serverId)
             {
             var result = await _serverOperationsService.DeleteServerAsync(userId, serverId);
@@ -61,6 +56,18 @@ namespace DiscordClone.Controllers
         public async Task<IActionResult> UnbanUser([FromBody] UnbanActionDto unbanAction)
         {
             var result = await _serverOperationsService.RemoveBanAsync(unbanAction.ServerId, unbanAction.RemoverId, unbanAction.BannedUserId);
+            return HandleResult(result);
+        }
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetServersByUserId(Guid userId)
+        {
+            var result = await _serverOperationsService.GetServersByUserIdAsync(userId);
+            return HandleResult(result);
+        }
+        [HttpGet("{serverId}")]
+        public async Task<IActionResult> GetServerById(Guid serverId)
+        {
+            var result = await _serverOperationsService.GetServerByIdAsync(serverId);
             return HandleResult(result);
         }
     }

@@ -23,7 +23,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<FriendshipService>();
 builder.Services.AddScoped<IServerOperationsService, ServerOperationsService>();
 builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>();
-
+builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>();
+builder.Services.AddScoped<ServerOperationsService>(); 
+builder.Services.AddScoped<MessageService>();
+builder.Services.AddSingleton<ChatHub>();
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => options.SignIn.RequireConfirmedAccount = false)
         .AddEntityFrameworkStores<ApplicationContext>()
         .AddDefaultTokenProviders();

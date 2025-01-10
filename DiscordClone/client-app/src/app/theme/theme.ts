@@ -75,6 +75,7 @@ const theme = createTheme({
                 paper: {
                     backgroundColor: '#2E2E2E',
                     width: '4%',
+                    overflow:"auto",
                     zIndex: 3,
                     paddingTop: '10px',
                     display: 'flex',

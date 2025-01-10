@@ -36,7 +36,7 @@ export default class UserStore {
         this.user = user;
     }
     setUserPhoto = (photo: string) => {
-        this.user.image = photo;
+        this.user!.image = photo;
     }
     getUser = () => this.user;
     deleteUser = () => this.user = null;
