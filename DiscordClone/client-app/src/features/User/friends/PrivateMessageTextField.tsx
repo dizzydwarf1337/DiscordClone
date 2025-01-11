@@ -1,11 +1,11 @@
-import { Box, Button, TextField } from "@mui/material";
-import { ChangeEvent, useState } from "react";
+import { Box, Button, IconButton, TextField } from "@mui/material";
+import { ChangeEvent, useEffect, useState } from "react";
 import { useStore } from "../../../app/stores/store";
 import { v4 as uuidv4 } from 'uuid';
 import { observer } from "mobx-react-lite";
 import { useParams } from "react-router-dom";
 import PrivateMessage from "../../../app/Models/PrivateMessage";
-
+import SendIcon from '@mui/icons-material/Send';
 export default observer(function PrivateMessageTextField() {
     const { signalRStore, userStore } = useStore();
     const [content, setContent] = useState("");
@@ -13,6 +13,7 @@ export default observer(function PrivateMessageTextField() {
     const handleMessageChange = (e: ChangeEvent<HTMLInputElement>) => {
         setContent(e.target.value);
     };
+    useEffect(() => { },[signalRStore])
 
     const handleSend = async () => {
         if (!content.trim()) return;
@@ -24,10 +25,13 @@ export default observer(function PrivateMessageTextField() {
             content: content.trim(),
             receiverId: friendId!,
         };
+        try {
+            await signalRStore.sendPrivateMessage(message);
+            setContent("");
 
-        await signalRStore.sendPrivateMessage(message);
-
-        setContent("");
+        } catch (error) {
+            console.error("Failed to send message:", error);
+        }
     };
 
     return (
@@ -52,9 +56,9 @@ export default observer(function PrivateMessageTextField() {
                     flexGrow: 1,
                 }}
             />
-            <Button variant="contained" onClick={handleSend}>
-                Send
-            </Button>
+            <IconButton onClick={handleSend}>
+                <SendIcon/>
+            </IconButton>
         </Box>
     );
 });

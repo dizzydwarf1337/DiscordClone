@@ -55,10 +55,13 @@ namespace DiscordClone.Hubs
         }
         public async Task SendPrivateMessage(PrivateMessageDto privateMessageDto)
         {
+            await Clients.User(privateMessageDto.SenderId.ToString())
+                .SendAsync("ReceivePrivateMessage", privateMessageDto);
             if (_userConnections.TryGetValue(privateMessageDto.ReceiverId.ToString(), out var connectionId))
             {
-                await Clients.Client(connectionId)
+                await Clients.User(privateMessageDto.ReceiverId.ToString())
                     .SendAsync("ReceivePrivateMessage", privateMessageDto);
+
             }
             else
             {

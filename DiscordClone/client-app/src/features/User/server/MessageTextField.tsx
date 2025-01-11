@@ -1,11 +1,11 @@
-import { Box, Button, TextField } from "@mui/material";
+import { Box, Button, IconButton, TextField } from "@mui/material";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useStore } from "../../../app/stores/store";
 import { v4 as uuidv4 } from 'uuid';
 import Message from "../../../app/Models/message";
 import { observer } from "mobx-react-lite";
 import { useParams } from "react-router-dom";
-
+import SendIcon from '@mui/icons-material/Send';
 export default observer(function MessageTextField() {
     const { channelStore, userStore, signalRStore, serverStore } = useStore(); 
     const [content, setContent] = useState("");
@@ -59,9 +59,9 @@ export default observer(function MessageTextField() {
                     flexGrow: 1,
                 }}
             />
-            <Button variant="contained" onClick={handleSend}>
-                Send
-            </Button>
+            <IconButton onClick={handleSend}>
+                <SendIcon />
+            </IconButton>
         </Box>
     );
 });

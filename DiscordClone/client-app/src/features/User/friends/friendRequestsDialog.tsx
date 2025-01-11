@@ -20,7 +20,6 @@ export default observer(function FriendRequestsDialog({ open, onClose }: Props) 
     useEffect(() => {  
         const loadData = async () => {
             var friendsRequests = await friendStore.GetUserFriendRequestsById(userStore.user?.id);
-            console.log(userStore.user.id); 
             var userFriends = await friendStore.GetUserFriendsById(userStore.user!.id);
             friendStore.setFriendsRequests(friendsRequests);
             friendStore.setFriends(userFriends);

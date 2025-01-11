@@ -66,7 +66,7 @@ export default observer(function ChannelDashboard() {
                 display="flex"
                 sx={{
                     flexGrow: 1,
-                    backgroundColor:"pink",
+                    backgroundColor:"#060018",
                     height:"100%"
                 }}
             >

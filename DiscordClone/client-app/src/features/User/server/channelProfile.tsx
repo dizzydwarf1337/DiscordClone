@@ -14,12 +14,14 @@ export default observer(function ChannelProfile() {
 
     useEffect(() => {
         const loadMessages = async () => {
-            runInAction(async () =>
-                signalRStore.messages.set(channelIdParam!, await channelStore.getMessagesFromLastDaysApi(channelIdParam!, page))
-            );
+            const messages = await channelStore.getMessagesFromLastDaysApi(channelIdParam!, page);
+            runInAction(() => {
+                signalRStore.messages.set(channelIdParam!, messages);
+            });
         };
+
         loadMessages();
-    },[channelIdParam]);
+    }, [channelIdParam, page, channelStore, signalRStore.messages]);
 
     return (
         <Box display="flex" flexDirection="column" width="100%" gap="10px" sx={{ m: "20px 10px 20px 10px" }}>

@@ -97,7 +97,6 @@ export default class FriendStore {
         try {
             this.setFriendLoading(true);
             const response = await agent.Friends.GetUserFriendsById(userId);
-            console.log(response);
             return (response);
         }
         catch (error) {

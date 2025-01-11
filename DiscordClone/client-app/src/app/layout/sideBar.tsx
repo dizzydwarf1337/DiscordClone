@@ -13,7 +13,7 @@ export default observer(function SideBar() {
     const [openFriends, setOpenFriends] = useState<boolean>(false);
     useEffect(() => {
         if (serverStore.servers.length === 0)
-            serverStore.getServersApi(userStore.user!.id).then(response => console.log(response));
+            serverStore.getServersApi(userStore.user!.id).then();
 
     }, [userStore,serverStore]);
 

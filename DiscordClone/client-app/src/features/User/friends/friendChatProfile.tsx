@@ -2,30 +2,38 @@ import { observer } from "mobx-react-lite";
 import { useStore } from "../../../app/stores/store";
 import { Box } from "@mui/material";
 import { useParams } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { runInAction } from "mobx";
 import agent from "../../../app/API/agent";
 import PrivateChatMessage from "./PrivateChatMessage";
 import PrivateMessageTextField from "./PrivateMessageTextField";
-import PrivateMessage from "../../../app/Models/PrivateMessage";
 
 export default observer(function FriendChatProfile() {
     const { userStore, signalRStore } = useStore();
     const { friendId } = useParams();
     const key = [userStore.user!.id, friendId].sort().join('-');
-   
+    const [page, setPage] = useState<number>(1);
 
     useEffect(() => {
         const loadMessages = async () => {
-            const newMessages = await agent.Messages.GetPrivateMessagesFromNDays(userStore.user!.id, friendId!, 1);
-            if (newMessages.length === 0) return;
-            runInAction(() => {
-                const existingMessages = signalRStore.privateMessages.get(key) || [];
-                signalRStore.privateMessages.set(key, [...newMessages]);
-            });
+            try {
+                const newMessages = await agent.Messages.GetPrivateMessagesFromNDays(
+                    userStore.user!.id,
+                    friendId!,
+                    page
+                );
+                runInAction(() => {
+                    signalRStore.privateMessages.set(key, newMessages);
+                });
+            } catch (error) {
+                console.error("Failed to load messages:", error);
+            }
         };
-        loadMessages();
-    }, [friendId, signalRStore.privateMessages.get(key)]);
+
+        if (friendId) {
+            loadMessages();
+        }
+    }, [friendId,page, signalRStore.privateMessages.get(key)?.length]);
 
 
 

@@ -11,7 +11,6 @@ export default class SignalRStore {
     currentChannel: string = "";
     currentServer: string = "";
     isConnected: boolean = false;
-
     constructor() {
         makeAutoObservable(this);
 
@@ -35,19 +34,35 @@ export default class SignalRStore {
                     .build();
 
                 await this.connection.start();
-                runInAction(() =>
-                    this.isConnected = true
-                );
+                runInAction(() => {
+                    this.isConnected = true;
+                });
+
                 console.log("Connection started");
                 this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
                 this.connection.on("ReceiveMessage", this.handleReceiveMessage);
 
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const userId = user.id;
-                await this.connection.invoke("SetUserId", userId);
+                try {
+                    await this.connection.invoke("SetUserId", userId);
+                } catch (error) {
+                    console.error("Failed to invoke SetUserId:", error);
+                }
+
+                this.connection.onreconnected(() => {
+                    console.log("Reconnected to the server.");
+                    runInAction(() => this.isConnected = true);
+                });
+
+                this.connection.onclose(() => {
+                    console.log("Disconnected. Attempting to reconnect...");
+                    runInAction(() => this.isConnected = false);
+                    setTimeout(this.startConnection, 5000);
+                });
             } catch (error) {
                 console.error("Connection failed, retrying...", error);
-                setTimeout(this.startConnection, 5000); 
+                setTimeout(this.startConnection, 5000);
             }
         }
     };
@@ -108,7 +123,6 @@ export default class SignalRStore {
             return;
         }
         var userChannels = await agent.Channels.GetUserChannels(userId || "");
-        console.log(userChannels);
         for (const groupName of userChannels) {
             try {
                 await this.connection.invoke("JoinChannel", groupName);
@@ -126,11 +140,12 @@ export default class SignalRStore {
         });
     };
     handleReceivePrivateMessage = (message: PrivateMessage) => {
-        const key = [message.senderId, message.receiverId].sort().join('-');
+        let key = [message.senderId, message.receiverId].sort().join("-");
         runInAction(() => {
+            console.log("Message received");
             const currentMessages = this.privateMessages.get(key) || [];
-            currentMessages.push(message);
-            this.privateMessages.set(key, currentMessages);
+            this.privateMessages.set(key, [...currentMessages, message]);
+            console.log("Private messages updated:", this.privateMessages);
         });
     };
     clearMessages = () => {

@@ -13,7 +13,6 @@ export default observer(function ChannelDashboard() {
         }
         loadFriends();
     }, [friendStore, userStore]);
-    console.log(friendStore.friends);
 
     const handleClick = (friendId: string) => {
         navigate('/main/friend/' + friendId);
@@ -85,7 +84,7 @@ export default observer(function ChannelDashboard() {
                 display="flex"
                 sx={{
                     flexGrow: 1,
-                    backgroundColor: "pink",
+                    backgroundColor: "#060018",
                     height: "100%"
                 }}
             >
