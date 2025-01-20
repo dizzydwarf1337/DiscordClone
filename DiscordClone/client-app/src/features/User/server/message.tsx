@@ -4,25 +4,26 @@ import SentimentSatisfiedAltIcon from "@mui/icons-material/SentimentSatisfiedAlt
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
-import Message from "../../../app/Models/message";
-import { AddReactionDto } from "../../../app/Models/AddReactionDto";  // Add this import for AddReactionDto
 
 export interface Props {
-    message: Message;
-    userId: string;  // Assuming we get the userId from props
-    reactionp: string;
+    message: {
+        messageId: string;
+        content: string;
+        createdAt: string;
+        senderName: string;
+        reactions: Array<{ userId: string; reactionType: string }>;
+    };
+    userId: string;
 }
 
 const Message = ({ message, userId }: Props) => {
     const [showReactions, setShowReactions] = useState(false);
     const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
-    const [reactions, setReactions] = useState<string[]>([]);  // To store reactions
+    const [reactions, setReactions] = useState<string[]>([]);
 
     useEffect(() => {
-        // Here you should load reactions from the message and set them
-        if (message.reaction) {
-            setReactions([message.reaction]);
-        }
+        // Set initial reactions from the message prop
+        setReactions(message.reactions.map((reaction) => reaction.reactionType));
     }, [message]);
 
     const handleReactionClick = async (reaction: string) => {
@@ -100,8 +101,8 @@ const Message = ({ message, userId }: Props) => {
             {reactions.length > 0 && (
                 <Box sx={{ display: "flex", justifyContent: "flex-start", gap: "8px", paddingTop: "5px" }}>
                     {reactions.map((reaction, index) => (
-                        <Typography key={index} variant="body2" sx={{ color: "#ff0" }}>
-                            {reaction}
+                        <Typography key={index} variant="body2" sx={{ color: "#ff0", fontSize: "1.5rem" }}>
+                            {reaction} {/* Render the emoji */}
                         </Typography>
                     ))}
                 </Box>
