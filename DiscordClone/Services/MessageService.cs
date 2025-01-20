@@ -119,29 +119,36 @@ namespace DiscordClone.Services
 }).ToList();
             return Result<List<MessageDto>>.Success(messageDtos);
         }
-        public async Task<Result<List<MessageDto>>> GetMessagesFromLastNDays(Guid channelId, int days)
+public async Task<Result<List<MessageDto>>> GetMessagesFromLastNDays(Guid channelId, int days)
+{
+    var fromDate = DateTime.UtcNow.AddDays(-days);
+    var messages = await _applicationContext.Messages
+        .Include(m => m.User)           // Include the User data (already present)
+        .Include(m => m.Reactions)      // Include the Reactions collection
+        .Where(m => m.ChannelId == channelId && m.CreatedAt >= fromDate)
+        .ToListAsync();
+
+    if (messages == null || messages.Count == 0)
+    {
+        return Result<List<MessageDto>>.Success(new List<MessageDto>());
+    }
+
+    var messageDtos = messages.Select(m => new MessageDto
+    {
+        MessageId = m.MessageId,
+        Content = m.Content,
+        CreatedAt = m.CreatedAt,
+        SenderId = m.UserId,
+        SenderName = m.User.UserName,
+        Reactions = m.Reactions != null ? m.Reactions.Select(r => new ReactionDto
         {
-            var fromDate = DateTime.UtcNow.AddDays(-days);
-            var messages = await _applicationContext.Messages.Include(x => x.User)
-                .Where(m => m.ChannelId == channelId && m.CreatedAt >= fromDate)
-                .ToListAsync();
+            UserId = r.UserId,
+            ReactionType = r.ReactionType,
+        }).ToList() : new List<ReactionDto>() // Ensure to handle null Reactions
+    }).OrderBy(x => x.CreatedAt).ToList();
 
-            if (messages == null || messages.Count == 0)
-            {
-                return Result<List<MessageDto>>.Success(new List<MessageDto>());
-            }
-
-            var messageDtos = messages.Select(m => new MessageDto
-            {
-                MessageId = m.MessageId,
-                Content = m.Content,
-                CreatedAt = m.CreatedAt,
-                SenderId = m.UserId,
-                SenderName = m.User.UserName
-            }).OrderBy(x => x.CreatedAt).ToList();
-
-            return Result<List<MessageDto>>.Success(messageDtos);
-        }
+    return Result<List<MessageDto>>.Success(messageDtos);
+}
         public async Task<Result<List<PrivateMessageDto>>> GetPrivateMessagesFromLastNDays(Guid user1, Guid user2, int days)
         {
             var fromDate = DateTime.UtcNow.AddDays(-days);

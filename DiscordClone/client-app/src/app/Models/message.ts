@@ -5,5 +5,5 @@ export default interface Message {
     channelId: string;
     senderId: string;
     senderName: string;
-    reactions: string;
+    reaction: string;
 }
