@@ -1,21 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box, Typography, IconButton } from "@mui/material";
 import SentimentSatisfiedAltIcon from "@mui/icons-material/SentimentSatisfiedAlt";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import Message from "../../../app/Models/message";
+import { AddReactionDto } from "../../../app/Models/AddReactionDto";  // Add this import for AddReactionDto
 
 export interface Props {
     message: Message;
+    userId: string;  // Assuming we get the userId from props
 }
 
-export default function Message({ message }: Props) {
+const Message = ({ message, userId }: Props) => {
     const [showReactions, setShowReactions] = useState(false);
     const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
+    const [reactions, setReactions] = useState<string[]>([]);  // To store reactions
 
-    const handleReactionClick = (reaction: string) => {
+    useEffect(() => {
+        // Here you should load reactions from the message and set them
+        if (message.reaction) {
+            setReactions([message.reaction]);
+        }
+    }, [message]);
+
+    const handleReactionClick = async (reaction: string) => {
         setSelectedReaction(reaction);
+
+        // Send the reaction to the API
+        try {
+            const response = await fetch("http://localhost:5000/api/message/reaction/add", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    MessageId: message.messageId,
+                    UserId: userId,
+                    ReactionType: reaction,
+                } as AddReactionDto),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                setReactions((prevReactions) => [...prevReactions, reaction]); // Add the reaction to the list
+            } else {
+                console.error(data.error || "Error adding reaction");
+            }
+        } catch (error) {
+            console.error("Error while adding reaction:", error);
+        }
     };
 
     return (
@@ -44,6 +78,8 @@ export default function Message({ message }: Props) {
                     {message.content}
                 </Typography>
             </Box>
+
+            {/* Display selected reaction */}
             {selectedReaction && (
                 <Box
                     sx={{
@@ -57,6 +93,19 @@ export default function Message({ message }: Props) {
                     {selectedReaction}
                 </Box>
             )}
+
+            {/* Display reactions */}
+            {reactions.length > 0 && (
+                <Box sx={{ display: "flex", justifyContent: "flex-start", gap: "8px", paddingTop: "5px" }}>
+                    {reactions.map((reaction, index) => (
+                        <Typography key={index} variant="body2" sx={{ color: "#ff0" }}>
+                            {reaction}
+                        </Typography>
+                    ))}
+                </Box>
+            )}
+
+            {/* Reaction buttons */}
             {showReactions && (
                 <Box
                     display="flex"
@@ -83,4 +132,6 @@ export default function Message({ message }: Props) {
             )}
         </Box>
     );
-}
+};
+
+export default Message;
