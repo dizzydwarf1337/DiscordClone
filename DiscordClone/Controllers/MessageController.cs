@@ -29,6 +29,26 @@ namespace DiscordClone.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+    [HttpPost("reaction/add")]
+    public async Task<IActionResult> AddReaction([FromBody] AddReactionDto addReactionDto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            await _messageService.AddReactionAsync(addReactionDto);
+            return Ok(new { message = "Reaction added successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
         [HttpPost("send/private")]
         public async Task<IActionResult> SendPrivateMEssage(PrivateMessageDto messageDto)
         {
@@ -43,7 +63,7 @@ namespace DiscordClone.Controllers
             }
         }
             // GET: api/message/{channelId}
-            [HttpGet("{channelId}")]
+       [HttpGet("{channelId}")]
         public async Task<IActionResult> GetAllMessages(Guid channelId)
         {
             return HandleResult(await _messageService.GetAllMessagesAsync(channelId));

@@ -38,7 +38,6 @@ namespace DiscordClone.Services
             _applicationContext.Messages.Add(message);
             await _applicationContext.SaveChangesAsync();
             await _chatHub.SendMessage(messageDto, groupName);
-
         }
         public async Task SendPrivateMessage(PrivateMessageDto messageDto)
         {
@@ -58,6 +57,41 @@ namespace DiscordClone.Services
             await _applicationContext.SaveChangesAsync();
             await _chatHub.SendPrivateMessage(messageDto);
         }
+
+            public async Task AddReactionAsync(AddReactionDto addReactionDto)
+    {
+        // Retrieve the message by ID
+        var message = await _applicationContext.Messages
+            .Include(m => m.Reactions)  // Include the reactions
+            .FirstOrDefaultAsync(m => m.MessageId == addReactionDto.MessageId);
+
+        if (message == null)
+        {
+            throw new Exception("Message not found");
+        }
+
+        // Check if the user has already reacted to the message with the same reaction type
+        var existingReaction = message.Reactions
+            .FirstOrDefault(r => r.UserId == addReactionDto.UserId && r.ReactionType == addReactionDto.ReactionType);
+
+        if (existingReaction != null)
+        {
+            throw new Exception("You have already reacted with this emoji.");
+        }
+
+        // Create the new reaction
+        var reaction = new Reaction
+        {
+            UserId = addReactionDto.UserId,
+            ReactionType = addReactionDto.ReactionType
+        };
+
+        // Add the reaction to the message
+        message.Reactions.Add(reaction);
+
+        // Save the changes to the database
+        await _applicationContext.SaveChangesAsync();
+    }
         public async Task<Result<List<MessageDto>>> GetAllMessagesAsync(Guid channelId)
         {
             var messages = await _applicationContext.Messages
@@ -74,9 +108,15 @@ namespace DiscordClone.Services
                 MessageId = m.MessageId,
                 Content = m.Content,
                 CreatedAt = m.CreatedAt,
-                SenderId = m.UserId
-            }).ToList();
-
+                SenderId = m.UserId,
+                Reactions = m.Reactions
+                .Select(r => new ReactionDto
+        {
+            UserId = r.UserId,  // Assuming 'UserId' is a property in the Reaction model
+            ReactionType = r.ReactionType
+        })
+        .ToList()  // Ensure you convert to List
+}).ToList();
             return Result<List<MessageDto>>.Success(messageDtos);
         }
         public async Task<Result<List<MessageDto>>> GetMessagesFromLastNDays(Guid channelId, int days)
