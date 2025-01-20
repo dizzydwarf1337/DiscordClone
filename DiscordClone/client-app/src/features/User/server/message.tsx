@@ -42,6 +42,7 @@ const Message = ({ message, userId }: Props) => {
             });
 
             const data = await response.json();
+            console.log(data);
             if (response.ok) {
                 setReactions((prevReactions) => [...prevReactions, reaction]); // Add the reaction to the list
             } else {

@@ -35,7 +35,7 @@ export default observer(function ChannelProfile() {
                                 p: "10px",
                             }}
                         >
-                            <Message message={message} />
+                            <Message message={message} userId={message.senderId} />
                         </Box>
                     ))
                 ) : (
