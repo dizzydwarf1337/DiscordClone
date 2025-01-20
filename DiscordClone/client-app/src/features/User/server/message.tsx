@@ -10,6 +10,7 @@ import { AddReactionDto } from "../../../app/Models/AddReactionDto";  // Add thi
 export interface Props {
     message: Message;
     userId: string;  // Assuming we get the userId from props
+    reactionp: string;
 }
 
 const Message = ({ message, userId }: Props) => {

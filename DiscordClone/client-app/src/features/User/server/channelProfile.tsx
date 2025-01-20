@@ -15,12 +15,10 @@ export default observer(function ChannelProfile() {
     useEffect(() => {
         const loadMessages = async () => {
             const messages = await channelStore.getMessagesFromLastDaysApi(channelIdParam!, page);
-            console.log(messages)
             runInAction(() => {
                 signalRStore.messages.set(channelIdParam!, messages);
             });
         };
-
         loadMessages();
     }, [channelIdParam, page, channelStore, signalRStore.messages]);
 
