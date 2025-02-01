@@ -35,22 +35,30 @@ export default function AddChannelButton({serverId}: AddChannelButtonProps) {
     };
 
     const handleCreateChannel = async () => {
-        if (channelName.trim()) {
-           if (serverId === undefined) {
-                alert("Server id is undefined");
-                return;
-           }
-           const newChannel: ChannelCreateDto = {
-            serverId: serverId,
-            name: channelName,
-            channelType: channelType,
-            topic: channelTopic,
-           };
-            await channelStore.createChannelApi(newChannel, user.id); 
-            handleClose();
-        } else {
-            alert("Channel name is required");
+        if (!user) {
+            alert("You must be logged in to create a channel.");
+            return;
         }
+
+        if (!channelName.trim()) {
+            alert("Channel name is required.");
+            return;
+        }
+
+        if (!serverId) {
+            alert("Server ID is undefined.");
+            return;
+        }
+
+        const newChannel: ChannelCreateDto = {
+            serverId,
+            name: channelName,
+            channelType,
+            topic: channelTopic,
+        };
+
+        await channelStore.createChannelApi(newChannel, user.id);
+        handleClose();
     };
 
     return (
