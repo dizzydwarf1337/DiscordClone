@@ -17,6 +17,10 @@ export default observer(function ChannelDashboard() {
     const handleClick = (friendId: string) => {
         navigate('/main/friend/' + friendId);
     }
+
+    const handleCallClick = (friendId: string) => {
+        alert(`Calling ${friendId}`);
+    }
     return (
         <Box display="flex" flexDirection="row" height="91vh" width="1474px" sx={{ backgroundColor: "#4E4E4E" }}>
             <Box
@@ -71,6 +75,7 @@ export default observer(function ChannelDashboard() {
                                 />
                                 <Typography variant="body1">{friend.username}</Typography>
                             </Box>
+                            <a onClick={() => handleCallClick(friend.id)}>Call</a>
                         </Box>
                     ))
                 ) : (
