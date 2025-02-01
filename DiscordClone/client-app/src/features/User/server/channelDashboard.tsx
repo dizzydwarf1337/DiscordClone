@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useStore } from "../../../app/stores/store";
 import { Box, Typography, Divider } from "@mui/material";
 import { Link, Outlet, useNavigate, useParams } from "react-router-dom";
+import AddChannelButton from "./AddChannelButton";
 
 export default observer(function ChannelDashboard() {
     const { serverStore, channelStore } = useStore();
@@ -60,6 +61,9 @@ export default observer(function ChannelDashboard() {
                         
                     </Box>
                 ))}
+
+                <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }}></Divider>
+                <AddChannelButton serverId={serverId}/>
             </Box>
 
             <Box
