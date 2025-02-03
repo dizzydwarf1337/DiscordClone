@@ -28,11 +28,17 @@ const Message = ({ message, userId }: Props) => {
     }, [message]);
 
     const handleReactionClick = async (reaction: string) => {
-        setSelectedReaction(reaction);
-
-        // Send the reaction to the API
         try {
-            const response = await fetch("http://localhost:5000/api/message/reaction/add", {
+            const hasReacted = reactions.includes(reaction);
+
+            // **Natychmiastowa aktualizacja stanu lokalnie (optymistyczna aktualizacja)**
+            setReactions(prevReactions =>
+                hasReacted
+                    ? prevReactions.filter(r => r !== reaction) // Usuń reakcję lokalnie
+                    : [...prevReactions, reaction] // Dodaj reakcję lokalnie
+            );
+
+            const response = await fetch(`http://localhost:5000/api/message/reaction/${hasReacted ? "remove" : "add"}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -41,18 +47,21 @@ const Message = ({ message, userId }: Props) => {
                     MessageId: message.messageId,
                     UserId: userId,
                     ReactionType: reaction,
-                } as AddReactionDto),
+                }),
             });
 
-            const data = await response.json();
-            console.log(data);
-            if (response.ok) {
-                setReactions((prevReactions) => [...prevReactions, reaction]); // Add the reaction to the list
-            } else {
-                console.error(data.error || "Error adding reaction");
+            if (!response.ok) {
+                throw new Error("Failed to update reaction");
+            }
+
+            // Opcjonalnie: Pobierz odświeżone reakcje z serwera dla 100% zgodności
+            const updatedReactionsResponse = await fetch(`http://localhost:5000/api/message/${message.messageId}/reactions`);
+            if (updatedReactionsResponse.ok) {
+                const updatedReactions = await updatedReactionsResponse.json();
+                setReactions(updatedReactions);
             }
         } catch (error) {
-            console.error("Error while adding reaction:", error);
+            console.error("Error updating reaction:", error);
         }
     };
 

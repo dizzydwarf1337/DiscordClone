@@ -29,25 +29,44 @@ namespace DiscordClone.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+        [HttpPost("reaction/add")]
+        public async Task<IActionResult> AddReaction([FromBody] AddReactionDto addReactionDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-    [HttpPost("reaction/add")]
-    public async Task<IActionResult> AddReaction([FromBody] AddReactionDto addReactionDto)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
+            try
+            {
+                await _messageService.AddReactionAsync(addReactionDto);
+                return Ok(new { message = "Reaction added successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
 
-        try
+
+        [HttpPost("reaction/remove")]
+        public async Task<IActionResult> RemoveReaction([FromBody] RemoveReactionDto removeReactionDto)
         {
-            await _messageService.AddReactionAsync(addReactionDto);
-            return Ok(new { message = "Reaction added successfully" });
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                await _messageService.RemoveReactionAsync(removeReactionDto);
+                return Ok(new { message = "Reaction removed successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
-    }
 
         [HttpPost("send/private")]
         public async Task<IActionResult> SendPrivateMEssage(PrivateMessageDto messageDto)
