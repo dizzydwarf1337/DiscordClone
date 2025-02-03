@@ -8,7 +8,7 @@ export interface Props {
 
 export default function PrivateChatMessage({ message }: Props) {
     return (
-        <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" width="90%" border="solid red 1px" borderRadius="10px">
+        <Box display="flex" flexDirection="column" borderRadius="10px">
             <Box display="flex" flexDirection="column" marginRight="15px">
                 <Typography variant="body2" sx={{ color: "#b0b3b8", fontSize: "0.9rem" }}>
                     {new Date(message.sentAt).toLocaleString()}

@@ -10,6 +10,7 @@ export interface Props {
         messageId: string;
         content: string;
         createdAt: string;
+        senderId: string;
         senderName: string;
         reactions: Array<{ userId: string; reactionType: string }>;
     };
@@ -55,20 +56,27 @@ const Message = ({ message, userId }: Props) => {
         }
     };
 
+    const isMyMessage = message.senderId === userId;
+
     return (
         <Box
             display="flex"
             flexDirection="column"
             justifyContent="center"
-            alignItems="center"
-            width="90%"
-            border="solid red 1px"
+            //alignItems={isMyMessage ? "flex-end" : "flex-start"} // Wyrównaj wiadomości użytkownika do prawej
+            //border="solid #eee 1px"
             borderRadius="10px"
             onMouseEnter={() => setShowReactions(true)}
             onMouseLeave={() => setShowReactions(false)}
-            sx={{ position: "relative" }}
+            sx={{
+                position: "relative",
+                //marginLeft: isMyMessage ? "auto" : "0", // Przesuń wiadomości użytkownika na prawo
+                //marginRight: isMyMessage ? "0" : "auto", // Przesuń wiadomości innych użytkowników na lewo
+                padding: "10px",
+                //maxWidth: "70%";
+            }}
         >
-            <Box display="flex" flexDirection="column" marginRight="15px">
+            <Box display="flex" flexDirection="column">
                 <Typography variant="body2" sx={{ fontWeight: "bold", color: "#fff" }}>
                     {message.senderName}
                 </Typography>
@@ -82,7 +90,7 @@ const Message = ({ message, userId }: Props) => {
                 </Typography>
             </Box>
 
-            {/* Display selected reaction */}
+            {/* Display selected reaction 
             {selectedReaction && (
                 <Box
                     sx={{
@@ -95,11 +103,11 @@ const Message = ({ message, userId }: Props) => {
                 >
                     {selectedReaction}
                 </Box>
-            )}
+            )}*/}
 
             {/* Display reactions */}
             {reactions.length > 0 && (
-                <Box sx={{ display: "flex", justifyContent: "flex-start", gap: "8px", paddingTop: "5px" }}>
+                <Box sx={{ display: "flex", justifyContent: "end", gap: "8px", paddingTop: "5px" }}>
                     {reactions.map((reaction, index) => (
                         <Typography key={index} variant="body2" sx={{ color: "#ff0", fontSize: "1.5rem" }}>
                             {reaction} {/* Render the emoji */}

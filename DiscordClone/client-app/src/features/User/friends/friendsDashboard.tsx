@@ -22,25 +22,25 @@ export default observer(function ChannelDashboard() {
         alert(`Calling ${friendId}`);
     }
     return (
-        <Box display="flex" flexDirection="row" height="91vh" width="1474px" sx={{ backgroundColor: "#4E4E4E" }}>
+        <Box display="flex" flexDirection="row" height="91vh" width="96vw" sx={{ backgroundColor: "#4E4E4E" }}>
+            {/* Left sidebar for friends */}
             <Box
                 display="flex"
                 flexDirection="column"
                 alignItems="center"
                 mt="20px"
+                ml="16px"
                 sx={{
                     backgroundColor: "#4E4E4E",
-                    width: "250px",
+                    width: "17vw", // 20% of viewport width
                     flexShrink: 0,
                 }}
             >
-                <Typography variant="h6">
-                    Friends
-                </Typography>
+                <Typography variant="h6">Friends</Typography>
 
                 <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
+
                 {friendStore.friends ? (
-                    
                     friendStore.friends.map((friend) => (
                         <Box
                             key={friend.id}
@@ -73,9 +73,10 @@ export default observer(function ChannelDashboard() {
                                         backgroundPosition: "center",
                                     }}
                                 />
-                                <Typography variant="body1">{friend.username}</Typography>
+                                <Typography ml="auto"
+                                    mr="auto" variant="body1">{friend.username}</Typography>
                             </Box>
-                            <a onClick={() => handleCallClick(friend.id)}>Call</a>
+                            {/*<a onClick={(e) => { e.stopPropagation(); handleCallClick(friend.id); }}>Call</a>*/}
                         </Box>
                     ))
                 ) : (
@@ -85,12 +86,14 @@ export default observer(function ChannelDashboard() {
                 )}
             </Box>
 
+            {/* Main content area */}
             <Box
                 display="flex"
                 sx={{
                     flexGrow: 1,
-                    backgroundColor: "#060018",
-                    height: "100%"
+                    backgroundColor: "#1B1B1B", //#060018
+                    height: "100%",
+                    width: "80vw", // 80% of viewport width
                 }}
             >
                 <Outlet />
