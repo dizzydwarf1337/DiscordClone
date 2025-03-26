@@ -15,7 +15,6 @@ export default observer(function ChannelProfile() {
     useEffect(() => {
         const loadMessages = async () => {
             const messages = await channelStore.getMessagesFromLastDaysApi(channelIdParam!, page);
-            console.log(messages);
             runInAction(() => {
                 signalRStore.messages.set(channelIdParam!, messages);
             });
@@ -50,10 +49,10 @@ export default observer(function ChannelProfile() {
                         </Box>
                     ))
                 ) : (
-                    <Box sx={{ textAlign: "center", color: "gray" }}>No messages</Box>
+                    <Box sx={{ textAlign: "center", color: "gray"}}>No messages</Box>
                 )}
             </Box>
-            <Box sx={{ m: "0px 5px 0px 5px" }}>
+            <Box sx={{ m: "0px 5px 0px 5px", mt:"auto" }}>
                 <MessageTextField />
             </Box>
         </Box>

@@ -1,15 +1,16 @@
 import { observer } from "mobx-react-lite";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "../../../app/stores/store";
-import { Box, Typography, Divider, Avatar } from "@mui/material";
-import { Link, Outlet, useNavigate, useParams } from "react-router-dom";
+import { Box, Typography, Divider } from "@mui/material";
+import {  Outlet, useNavigate, useParams } from "react-router-dom";
 import AddChannelButton from "./AddChannelButton";
+import ServerMembers from "./serverMembers";
 
 export default observer(function ChannelDashboard() {
     const { serverStore, channelStore } = useStore();
     const { serverId } = useParams();
     const navigate = useNavigate();
-
+    const [sideBarOpen, setSideBarOpen] = useState<boolean>(false);
     useEffect(() => {
         if (serverId) {
             serverStore.getServerApi(serverId);
@@ -77,7 +78,9 @@ export default observer(function ChannelDashboard() {
                 ))}
 
                 <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
-                <AddChannelButton serverId={serverId} />
+                <Box display="flex" width="100%" justifyContent="center">
+                    <AddChannelButton serverId={serverId} />
+                </Box>
             </Box>
 
             {/* Main content area */}
@@ -98,49 +101,16 @@ export default observer(function ChannelDashboard() {
                 display="flex"
                 flexDirection="column"
                 sx={{
-                    width: "10vw",  // Fixed width for right sidebar
+                    width: sideBarOpen
+                        ?  "15vw"
+                        : "5vw"
+                    ,  // Fixed width for right sidebar
                     backgroundColor: "#3A3A3A",
-                    padding: "20px",
                     overflowY: "auto",
-                    flexShrink: 0,
                     marginLeft: "auto", // To ensure it is on the right
                 }}
             >
-                <Typography variant="h6" sx={{ mb: 2, color: "white" }}>
-                    Server Members
-                </Typography>
-
-                {serverStore.serverMembers.length === 0 ? (
-                    <Typography>No members available</Typography>
-                ) : (
-                    serverStore.serverMembers.map((member) => (
-                        <Box
-                            key={member.id}
-                            display="flex"
-                            alignItems="center"
-                            sx={{
-                                mb: 1,
-                                p: 1,
-                                borderRadius: 2,
-                                '&:hover': {
-                                    backgroundColor: "#4A4A4A"
-                                }
-                            }}
-                        >
-                            <Avatar
-                                sx={{
-                                    width: 32,
-                                    height: 32,
-                                    mr: 2
-                                }}
-                                src={member.image || undefined}
-                            >
-                                {!member.image && member.username?.charAt(0).toUpperCase()}
-                            </Avatar>
-                            <Typography>{member.username || 'Unnamed'}</Typography>
-                        </Box>
-                    ))
-                )}
+                <ServerMembers isOpen={sideBarOpen} setIsOpen={(value:boolean)=>setSideBarOpen(value) } />
             </Box>
         </Box>
     );

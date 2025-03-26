@@ -63,7 +63,7 @@ export default function AddChannelButton({serverId}: AddChannelButtonProps) {
 
     return (
         <>
-            <Button variant="contained" color="primary" onClick={handleClickOpen}>
+            <Button variant="contained" color="secondary" fullWidth size="small" onClick={handleClickOpen}>
                 Add Channel
             </Button>
 
