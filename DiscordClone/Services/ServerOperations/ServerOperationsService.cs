@@ -17,6 +17,8 @@ namespace DiscordClone.Services.ServerOperations
         Task<Result<string>> RemoveBanAsync(Guid serverId, Guid removerId, Guid bannedUserId);
         Task<Result<ServerDto>> GetServerByIdAsync(Guid serverId);
         Task<Result<ICollection<ServerDto>>> GetServersByUserIdAsync(Guid userId);
+
+        Task<Result<ICollection<UserDto>>> GetServerMembersAsync(Guid serverId);
     }
 
     public class ServerOperationsService : IServerOperationsService
@@ -308,6 +310,23 @@ namespace DiscordClone.Services.ServerOperations
                 return Result<ServerDto>.Success(serverDto);
             }
             else return Result<ServerDto>.Failure("No server found");
+        }
+
+        public async Task<Result<ICollection<UserDto>>> GetServerMembersAsync(Guid serverId)
+        {
+            var serverMembers = await _context.ServerMembers
+                .Include(sm => sm.User)
+                .Where(sm => sm.ServerId == serverId)
+                .Select(sm => new UserDto
+                {
+                    Id = sm.User.Id.ToString(),
+                    Username = sm.User.UserName,
+                    Email = sm.User.Email,
+                    Image = sm.User.AvatarUrl
+                })
+                .ToListAsync();
+
+            return Result<ICollection<UserDto>>.Success(serverMembers);
         }
     }
 }

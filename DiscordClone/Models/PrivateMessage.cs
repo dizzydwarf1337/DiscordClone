@@ -16,5 +16,7 @@ namespace DiscordClone.Models
         public virtual User Sender { get; set; }
         [ForeignKey("ReceiverId")]
         public virtual User Receiver { get; set; }
+
+        public ICollection<Reaction>? Reactions { get; set; }
     }
 }

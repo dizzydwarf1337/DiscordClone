@@ -5,6 +5,7 @@ import { ServerCreateDto } from '../Models/ServerCreate';
 import { User } from '../Models/user';
 import ServerBan from '../Models/ServerBan';
 import UnbanDto from '../Models/UnbanDto';
+import { ServerMember } from '../Models/ServerMember';
 
 export class ServerStore {
     constructor() {
@@ -13,6 +14,7 @@ export class ServerStore {
     servers: Server[] = [];
     selectedServer: Server | null = null;
     loading: boolean = false;
+    serverMembers: ServerMember[] = [];
 
 
     getServers = () => this.servers;
@@ -120,4 +122,36 @@ export class ServerStore {
     addServer = (server: Server) => {
         this.servers.push(server);
     };
+    // W ServerStore
+    fetchServerMembers = async (serverId: string) => {
+        this.setLoading(true);
+        try {
+            const response = await agent.Servers.GetServerMembers(serverId);
+            console.log('API Response for Server Members:', response);  // Sprawdź odpowiedź API
+
+            // Jeśli odpowiedź to tablica, po prostu przypisz ją do stanu MobX
+            if (Array.isArray(response)) {
+                runInAction(() => {
+                    this.serverMembers = response.map((member: any) => ({
+                        id: member.id,
+                        username: member.username,
+                        email: member.email,
+                        image: member.image,
+                    }));
+                });
+            } else {
+                console.log('Odpowiedź API nie zawiera tablicy:', response);
+            }
+        } catch (error) {
+            console.log(`Cannot fetch server members for server ${serverId}`, error);
+            runInAction(() => {
+                this.serverMembers = [];
+            });
+        } finally {
+            this.setLoading(false);
+        }
+    };
+
+
+
 }

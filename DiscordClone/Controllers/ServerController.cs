@@ -70,5 +70,11 @@ namespace DiscordClone.Controllers
             var result = await _serverOperationsService.GetServerByIdAsync(serverId);
             return HandleResult(result);
         }
+        [HttpGet("members/{serverId}")]
+        public async Task<IActionResult> GetServerMembers(Guid serverId)
+        {
+            var result = await _serverOperationsService.GetServerMembersAsync(serverId);
+            return HandleResult(result);
+        }
     }
 }

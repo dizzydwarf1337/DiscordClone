@@ -4,6 +4,7 @@ using DiscordClone.Db;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DiscordClone.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20250203184858_fsgs")]
+    partial class fsgs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -402,9 +405,6 @@ namespace DiscordClone.Migrations
                     b.Property<Guid>("MessageId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("PrivateMessageMessageId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("ReactionType")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -416,8 +416,6 @@ namespace DiscordClone.Migrations
                     b.HasKey("ReactionId");
 
                     b.HasIndex("MessageId");
-
-                    b.HasIndex("PrivateMessageMessageId");
 
                     b.HasIndex("UserId");
 
@@ -1069,10 +1067,6 @@ namespace DiscordClone.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DiscordClone.Models.PrivateMessage", null)
-                        .WithMany("Reactions")
-                        .HasForeignKey("PrivateMessageMessageId");
-
                     b.HasOne("DiscordClone.Models.User", "User")
                         .WithMany("Reactions")
                         .HasForeignKey("UserId")
@@ -1285,11 +1279,6 @@ namespace DiscordClone.Migrations
                     b.Navigation("Options");
 
                     b.Navigation("Votes");
-                });
-
-            modelBuilder.Entity("DiscordClone.Models.PrivateMessage", b =>
-                {
-                    b.Navigation("Reactions");
                 });
 
             modelBuilder.Entity("DiscordClone.Models.Role", b =>

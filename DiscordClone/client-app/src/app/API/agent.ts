@@ -64,6 +64,9 @@ const Servers = {
     UnBanUser: (unbanDto: UnbanDto, noAuth = false) => requests.post<ApiResponseModel>('server/unban', unbanDto, noAuth),
     GetServersByUserId: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`server/user/${userId}`, noAuth),
     GetServerById: (serverId: string, noAuth = false) => requests.get<ApiResponseModel>(`server/${serverId}`, noAuth),
+
+    GetServerMembers: (serverId: string, noAuth = false) =>
+        requests.get<ApiResponseModel>(`server/members/${serverId}`, noAuth)
 }
 const Channels = {
     CreateChannel: (createChannel: ChannelCreateDto, userId: string, noAuth = false) => requests.post<ApiResponseModel>(`Channel/create/${userId}`, createChannel, noAuth),

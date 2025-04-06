@@ -38,7 +38,6 @@ namespace DiscordClone.Services
             _applicationContext.Messages.Add(message);
             await _applicationContext.SaveChangesAsync();
             await _chatHub.SendMessage(messageDto, groupName);
-
         }
         public async Task SendPrivateMessage(PrivateMessageDto messageDto)
         {
@@ -58,6 +57,110 @@ namespace DiscordClone.Services
             await _applicationContext.SaveChangesAsync();
             await _chatHub.SendPrivateMessage(messageDto);
         }
+
+        public async Task AddReactionAsync(AddReactionDto addReactionDto)
+        {
+            // Sprawdzenie, czy wiadomość jest prywatna
+            var privateMessage = await _applicationContext.PrivateMessages
+                .Include(m => m.Reactions)
+                .FirstOrDefaultAsync(m => m.MessageId == addReactionDto.MessageId);
+
+            if (privateMessage != null)
+            {
+                var existingReaction = privateMessage.Reactions
+                    .FirstOrDefault(r => r.UserId == addReactionDto.UserId && r.ReactionType == addReactionDto.ReactionType);
+
+                if (existingReaction != null)
+                {
+                    privateMessage.Reactions.Remove(existingReaction);
+                }
+                else
+                {
+                    privateMessage.Reactions.Add(new Reaction
+                    {
+                        UserId = addReactionDto.UserId,
+                        ReactionType = addReactionDto.ReactionType
+                    });
+                }
+
+                await _applicationContext.SaveChangesAsync();
+                return;
+            }
+
+            // Jeśli to nie jest prywatna wiadomość, sprawdza zwykłą wiadomość w kanale
+            var message = await _applicationContext.Messages
+                .Include(m => m.Reactions)
+                .FirstOrDefaultAsync(m => m.MessageId == addReactionDto.MessageId);
+
+            if (message == null)
+            {
+                throw new Exception("Message not found");
+            }
+
+            var existingReactionInChannel = message.Reactions
+                .FirstOrDefault(r => r.UserId == addReactionDto.UserId && r.ReactionType == addReactionDto.ReactionType);
+
+            if (existingReactionInChannel != null)
+            {
+                message.Reactions.Remove(existingReactionInChannel);
+            }
+            else
+            {
+                message.Reactions.Add(new Reaction
+                {
+                    UserId = addReactionDto.UserId,
+                    ReactionType = addReactionDto.ReactionType
+                });
+            }
+
+            await _applicationContext.SaveChangesAsync();
+        }
+
+
+
+        public async Task RemoveReactionAsync(RemoveReactionDto removeReactionDto)
+        {
+            // Sprawdzenie, czy wiadomość jest prywatna
+            var privateMessage = await _applicationContext.PrivateMessages
+                .Include(m => m.Reactions)
+                .FirstOrDefaultAsync(m => m.MessageId == removeReactionDto.MessageId);
+
+            if (privateMessage != null)
+            {
+                var reaction = privateMessage.Reactions
+                    .FirstOrDefault(r => r.UserId == removeReactionDto.UserId && r.ReactionType == removeReactionDto.ReactionType);
+
+                if (reaction != null)
+                {
+                    privateMessage.Reactions.Remove(reaction);
+                    await _applicationContext.SaveChangesAsync();
+                }
+
+                return;
+            }
+
+            // Jeśli to nie jest prywatna wiadomość, sprawdza zwykłą wiadomość w kanale
+            var message = await _applicationContext.Messages
+                .Include(m => m.Reactions)
+                .FirstOrDefaultAsync(m => m.MessageId == removeReactionDto.MessageId);
+
+            if (message == null)
+            {
+                throw new Exception("Message not found");
+            }
+
+            var reactionInChannel = message.Reactions
+                .FirstOrDefault(r => r.UserId == removeReactionDto.UserId && r.ReactionType == removeReactionDto.ReactionType);
+
+            if (reactionInChannel != null)
+            {
+                message.Reactions.Remove(reactionInChannel);
+                await _applicationContext.SaveChangesAsync();
+            }
+        }
+
+
+
         public async Task<Result<List<MessageDto>>> GetAllMessagesAsync(Guid channelId)
         {
             var messages = await _applicationContext.Messages
@@ -74,15 +177,23 @@ namespace DiscordClone.Services
                 MessageId = m.MessageId,
                 Content = m.Content,
                 CreatedAt = m.CreatedAt,
-                SenderId = m.UserId
+                SenderId = m.UserId,
+                Reactions = m.Reactions
+                .Select(r => new ReactionDto
+                {
+                    UserId = r.UserId,  // Assuming 'UserId' is a property in the Reaction model
+                    ReactionType = r.ReactionType
+                })
+        .ToList()  // Ensure you convert to List
             }).ToList();
-
             return Result<List<MessageDto>>.Success(messageDtos);
         }
         public async Task<Result<List<MessageDto>>> GetMessagesFromLastNDays(Guid channelId, int days)
         {
             var fromDate = DateTime.UtcNow.AddDays(-days);
-            var messages = await _applicationContext.Messages.Include(x => x.User)
+            var messages = await _applicationContext.Messages
+                .Include(m => m.User)           // Include the User data (already present)
+                .Include(m => m.Reactions)      // Include the Reactions collection
                 .Where(m => m.ChannelId == channelId && m.CreatedAt >= fromDate)
                 .ToListAsync();
 
@@ -97,7 +208,12 @@ namespace DiscordClone.Services
                 Content = m.Content,
                 CreatedAt = m.CreatedAt,
                 SenderId = m.UserId,
-                SenderName = m.User.UserName
+                SenderName = m.User.UserName,
+                Reactions = m.Reactions != null ? m.Reactions.Select(r => new ReactionDto
+                {
+                    UserId = r.UserId,
+                    ReactionType = r.ReactionType,
+                }).ToList() : new List<ReactionDto>() // Ensure to handle null Reactions
             }).OrderBy(x => x.CreatedAt).ToList();
 
             return Result<List<MessageDto>>.Success(messageDtos);
@@ -105,7 +221,7 @@ namespace DiscordClone.Services
         public async Task<Result<List<PrivateMessageDto>>> GetPrivateMessagesFromLastNDays(Guid user1, Guid user2, int days)
         {
             var fromDate = DateTime.UtcNow.AddDays(-days);
-            var user1SendedMessages = await _applicationContext.PrivateMessages.Where(x=>x.SenderId==user1 && x.ReceiverId== user2 && x.SentAt >= fromDate).ToListAsync();
+            var user1SendedMessages = await _applicationContext.PrivateMessages.Where(x => x.SenderId == user1 && x.ReceiverId == user2 && x.SentAt >= fromDate).ToListAsync();
             _logger.LogInformation($"User1 sended messages: {user1SendedMessages.Count}");
             _logger.LogInformation($"user1 sended messages:{user1SendedMessages}");
             var user2SendedMessages = await _applicationContext.PrivateMessages.Where(x => x.SenderId == user2 && x.ReceiverId == user1 && x.SentAt >= fromDate).ToListAsync();
@@ -114,7 +230,7 @@ namespace DiscordClone.Services
             int i = 0, j = 0;
             List<PrivateMessageDto> privateMessageDtos = new();
             var allMessages = user1SendedMessages.Concat(user2SendedMessages)
-                                      .OrderByDescending(m => m.SentAt) 
+                                      .OrderByDescending(m => m.SentAt)
                                       .ToList();
 
             foreach (var message in allMessages)

@@ -11,5 +11,7 @@
 
         public Guid SenderId { get; set; }
         public string SenderName { get; set; } = string.Empty;
+
+        public List<ReactionDto> Reactions { get; set; } = new List<ReactionDto>();
     }
 }
