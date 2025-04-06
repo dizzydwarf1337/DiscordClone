@@ -89,7 +89,7 @@ const Friends = {
     RejectFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/reject', friendRequest, noAuth),
     GetUserFriendsById: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friends/${userId}`, noAuth),
     GetUserFriendRequestsById: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/requests/${userId}`, noAuth),
-
+    GetFriendGroupsByUserId: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friendGroups/${userId}`, noAuth),
 }
 const agent = {
     Auth,

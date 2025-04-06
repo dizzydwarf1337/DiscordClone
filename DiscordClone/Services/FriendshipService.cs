@@ -3,6 +3,7 @@ using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
 using DiscordClone.Utils;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 public class FriendshipService
 {
@@ -143,5 +144,33 @@ public class FriendshipService
         }).ToList();
         _logger.LogInformation("Friends: {Friends}", friendsDto);
         return Result<ICollection<UserDto>>.Success(friendsDto);
+    }
+
+    public async Task<Result<ICollection<FriendGroupDto>>> GetFriendGroupsById(Guid userId)
+    {
+        _logger.LogInformation("Getting friend groups for user: {UserId}", userId);
+
+        // Fetching friend groups where the user is either the creator or a member
+        var groups = await _context.FriendGroups
+            .Where(g => g.CreatorId == userId || g.Members.Any(m => m.Id == userId))
+            .Include(g => g.Members)  // Load the members of each group
+            .ToListAsync();
+
+        // Mapping the result to DTOs
+        var groupDtos = groups.Select(g => new FriendGroupDto
+        {
+            Id = g.Id,
+            CreatorId = g.CreatorId,
+            Members = g.Members.Select(m => new UserDto
+            {
+                Id = m.Id.ToString(),
+                Username = m.UserName,
+                Image = m.AvatarUrl
+            }).ToList()
+        }).ToList();
+
+        _logger.LogInformation("Found {GroupCount} friend groups for user: {UserId}", groups.Count, userId);
+
+        return Result<ICollection<FriendGroupDto>>.Success(groupDtos);
     }
 }

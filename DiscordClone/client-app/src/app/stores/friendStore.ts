@@ -4,6 +4,7 @@ import FriendRequest from "../Models/FriendRequest";
 import agent from "../API/agent";
 import FriendsUsernameRequest from "../Models/FriendsUsernameRequest";
 import PrivateMessage from "../Models/PrivateMessage";
+import { FriendGroup } from "../Models/FriendGroup";
 
 
 export default class FriendStore {
@@ -16,6 +17,18 @@ export default class FriendStore {
     friendRequests: FriendRequest[] = [];
     friendLoading: boolean = false;
     selectedFriend: User | null = null;
+    friendGroups: FriendGroup[] = [];
+
+    setFriendGroups = (groups: FriendGroup[]) => {
+        this.friendGroups = groups;
+    };
+
+    getFriendGroupsByUserId = async (userId: string) => {
+        const groups = await agent.Friends.FriendGroups.getByUserId(userId);
+        runInAction(() => {
+            this.friendGroups = groups;
+        });
+    };
 
     setFriends = (friends: User[]) => {
         runInAction(() => {

@@ -57,5 +57,10 @@ namespace DiscordClone.Controllers
         {
             return HandleResult(await _friendshipService.GetFriendsRequests(userId));
         }
+        [HttpGet("friendsGroup/{userId}")]
+        public async Task<IActionResult> GetFriendGroupsById(Guid userId)
+        {
+            return HandleResult(await _friendshipService.GetFriendGroupsById(userId));
+        }
     }
 }

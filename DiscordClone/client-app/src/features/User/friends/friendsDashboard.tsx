@@ -36,8 +36,10 @@ export default observer(function ChannelDashboard() {
                     flexShrink: 0,
                 }}
             >
+                <Typography variant="h6">Friends groups</Typography>
+                <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
+                // tutaj dodaj friendsgrup
                 <Typography variant="h6">Friends</Typography>
-
                 <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
 
                 {friendStore.friends ? (

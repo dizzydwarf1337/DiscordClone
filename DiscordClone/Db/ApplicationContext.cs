@@ -32,6 +32,7 @@ namespace DiscordClone.Db
         public DbSet<PinnedMessage> PinnedMessages { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<PrivateMessage> PrivateMessages { get; set; }
+        public DbSet<FriendGroup> FriendGroups { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
