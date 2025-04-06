@@ -13,6 +13,7 @@ import  Message  from '../Models/message';
 import FriendRequest from '../Models/FriendRequest';
 import FriendsUsernameRequest from '../Models/FriendsUsernameRequest';
 import PrivateMessage from '../Models/PrivateMessage';
+import { CreateGroupDto } from '../Models/CreateGroupDto';
 
 
 axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -89,7 +90,8 @@ const Friends = {
     RejectFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/reject', friendRequest, noAuth),
     GetUserFriendsById: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friends/${userId}`, noAuth),
     GetUserFriendRequestsById: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/requests/${userId}`, noAuth),
-    GetFriendGroupsByUserId: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friendGroups/${userId}`, noAuth),
+    GetFriendGroupsByUserId: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friendsgroup/${userId}`, noAuth),
+    CreateFriendGroup: (createGroup: CreateGroupDto, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/create`, createGroup, noAuth),
 }
 const agent = {
     Auth,

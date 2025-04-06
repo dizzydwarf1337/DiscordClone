@@ -10,6 +10,10 @@ export default observer(function ChannelDashboard() {
     useEffect(() => {
         const loadFriends = async () => {
             friendStore.setFriends(await friendStore.GetUserFriendsById(userStore.user!.id));
+
+            const groups = await friendStore.getFriendGroupsByUserId(userStore.user!.id);
+            console.log("Friend groups fetched:", groups);  // Log the fetched groups
+            friendStore.setFriendGroups(groups || []); 
         }
         loadFriends();
     }, [friendStore, userStore]);
@@ -38,7 +42,34 @@ export default observer(function ChannelDashboard() {
             >
                 <Typography variant="h6">Friends groups</Typography>
                 <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
-                // tutaj dodaj friendsgrup
+                {friendStore.friendGroups?.length > 0 ? (
+                friendStore.friendGroups.map((group) => (
+                    <Box
+                        key={group.id}
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        width="85%"
+                        height="40px"
+                        sx={{
+                            backgroundColor: "#333333",
+                            borderRadius: "10px",
+                            mb: "10px",
+                            px: "12px",
+                            '&:hover': {
+                                backgroundColor: "#444444",
+                                cursor: "pointer"
+                            }
+                        }}
+                        onClick={() => navigate(`/main/group/${group.id}`)}
+                    >
+                        <Typography variant="body1" color="white">{group.name}</Typography>
+                    </Box>
+                ))
+            ) : (
+                <Typography variant="body2" color="gray">No groups yet</Typography>
+            )}
+
                 <Typography variant="h6">Friends</Typography>
                 <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
 

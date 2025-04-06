@@ -62,5 +62,25 @@ namespace DiscordClone.Controllers
         {
             return HandleResult(await _friendshipService.GetFriendGroupsById(userId));
         }
+
+        [HttpPost("friendsGroup/create")]
+        public async Task<IActionResult> CreateGroup([FromBody] CreateGroupDto createGroupDto)
+        {
+            if (createGroupDto == null || string.IsNullOrEmpty(createGroupDto.GroupName))
+            {
+                return BadRequest("Group name is required.");
+            }
+
+            // Pass the DTO to the service to create the group
+            var result = await _friendshipService.CreateGroupAsync(createGroupDto.CreatorId, createGroupDto.GroupName);
+            
+            return HandleResult(result);
+        }
+
+        [HttpPost("friendsGroup/{userId}/{groupId}")]
+        public async Task<IActionResult> AddFriendToGroupById(Guid userId, Guid groupId)
+        {
+            return HandleResult(await _friendshipService.AddUserToGroupAsync(userId, groupId));
+        }
     }
 }

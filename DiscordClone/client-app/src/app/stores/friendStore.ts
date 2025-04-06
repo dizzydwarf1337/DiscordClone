@@ -5,6 +5,7 @@ import agent from "../API/agent";
 import FriendsUsernameRequest from "../Models/FriendsUsernameRequest";
 import PrivateMessage from "../Models/PrivateMessage";
 import { FriendGroup } from "../Models/FriendGroup";
+import { CreateGroupDto } from "../Models/CreateGroupDto";
 
 
 export default class FriendStore {
@@ -24,12 +25,33 @@ export default class FriendStore {
     };
 
     getFriendGroupsByUserId = async (userId: string) => {
-        const groups = await agent.Friends.FriendGroups.getByUserId(userId);
-        runInAction(() => {
-            this.friendGroups = groups;
-        });
+        try {
+            this.setFriendLoading(true);
+            const response = await agent.Friends.GetFriendGroupsByUserId(userId);
+            return response; 
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
     };
 
+    createFriendGroup = async (createGroup: CreateGroupDto) => {
+            try {
+            const response = await agent.Friends.CreateFriendGroup(createGroup);
+            return response; 
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+    };
+
+  //  addFriendToGroup = async ()
     setFriends = (friends: User[]) => {
         runInAction(() => {
             this.friends = friends;

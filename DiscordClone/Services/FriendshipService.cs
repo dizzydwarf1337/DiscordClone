@@ -160,6 +160,7 @@ public class FriendshipService
         var groupDtos = groups.Select(g => new FriendGroupDto
         {
             Id = g.Id,
+            Name = g.Name,
             CreatorId = g.CreatorId,
             Members = g.Members.Select(m => new UserDto
             {
@@ -172,5 +173,120 @@ public class FriendshipService
         _logger.LogInformation("Found {GroupCount} friend groups for user: {UserId}", groups.Count, userId);
 
         return Result<ICollection<FriendGroupDto>>.Success(groupDtos);
+    }
+
+    // Creating a new Friend Group
+    public async Task<Result<FriendGroupDto>> CreateGroupAsync(Guid creatorId, string groupName)
+    {
+        _logger.LogInformation("Creating new group by user: {CreatorId}", creatorId);
+
+        // Check if the user exists
+        var user = await _context.Users.FindAsync(creatorId);
+        if (user == null)
+        {
+            return Result<FriendGroupDto>.Failure("User not found.");
+        }
+
+        // Create a new group
+        var group = new FriendGroup
+        {
+            Id = Guid.NewGuid(), // Generating a new unique group ID
+            Name = groupName,
+            CreatorId = creatorId,
+            Members = new List<User> { user } // Initially add the creator as the first member
+        };
+
+        // Add the group to the context
+        _context.FriendGroups.Add(group);
+
+        // Save the changes to the database
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("New group created with creator: {CreatorId} groupId: {GroupId}", creatorId, group.Id);
+
+        // Return a DTO with the created group
+        var groupDto = new FriendGroupDto
+        {
+            Id = group.Id,
+            Name = group.Name,
+            CreatorId = group.CreatorId,
+            Members = new List<UserDto>
+            {
+                new UserDto
+                {
+                    Id = user.Id.ToString(),
+                    Username = user.UserName,
+                    Image = user.AvatarUrl
+                }
+            }
+        };
+
+        return Result<FriendGroupDto>.Success(groupDto);
+    }
+    // Adding a User to a Friend Group
+    public async Task<Result<bool>> AddUserToGroupAsync(Guid userId, Guid groupId)
+    {
+        _logger.LogInformation("Adding user: {UserId} to group: {GroupId}", userId, groupId);
+
+        var group = await _context.FriendGroups
+            .Include(g => g.Members)
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null)
+        {
+            return Result<bool>.Failure("Group not found.");
+        }
+
+        // Check if the user is already a member
+        if (group.Members.Any(m => m.Id == userId))
+        {
+            return Result<bool>.Failure("User is already a member of this group.");
+        }
+
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return Result<bool>.Failure("User not found.");
+        }
+
+        group.Members.Add(user);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("User: {UserId} added to group: {GroupId}", userId, groupId);
+        return Result<bool>.Success(true);
+    }
+
+    // Removing a User from a Friend Group
+    public async Task<Result<bool>> RemoveUserFromGroupAsync(Guid userId, Guid groupId)
+    {
+        _logger.LogInformation("Removing user: {UserId} from group: {GroupId}", userId, groupId);
+
+        var group = await _context.FriendGroups
+            .Include(g => g.Members)
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null)
+        {
+            return Result<bool>.Failure("Group not found.");
+        }
+
+        // Check if the user is a member of the group
+        var user = group.Members.FirstOrDefault(m => m.Id == userId);
+        if (user == null)
+        {
+            return Result<bool>.Failure("User is not a member of this group.");
+        }
+
+        // Check if the user is the creator, since the creator can't be removed from the group
+        if (group.CreatorId == userId)
+        {
+            return Result<bool>.Failure("Cannot remove the creator from the group.");
+        }
+
+        group.Members.Remove(user);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("User: {UserId} removed from group: {GroupId}", userId, groupId);
+        return Result<bool>.Success(true);
     }
 }

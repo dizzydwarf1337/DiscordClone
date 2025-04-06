@@ -9,6 +9,8 @@ public class FriendGroup
     [Key]
     public Guid Id { get; set; }
 
+    public string Name { get; set; }
+
     [Required]
     public Guid CreatorId { get; set; }
 
