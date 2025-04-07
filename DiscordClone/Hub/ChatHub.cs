@@ -71,7 +71,7 @@ namespace DiscordClone.Hubs
 
         public async Task SendGroupMessage(GroupMessageDto groupMessageDto)
         {
-            await Clients.Group("${groupMessageDto.GroupId}").SendAsync("ReceiveGroupMessage", groupMessageDto);
+            await Clients.Group($"{groupMessageDto.GroupId}").SendAsync("ReceiveGroupMessage", groupMessageDto);
         }
         public async Task SendMessage(MessageDto messageDto, string groupName)
         {

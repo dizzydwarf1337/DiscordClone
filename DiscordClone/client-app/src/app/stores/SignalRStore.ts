@@ -1,5 +1,5 @@
 import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
-import { makeAutoObservable, runInAction } from "mobx";
+import { action, makeAutoObservable, observable, ObservableMap, runInAction } from "mobx";
 import Message from "../Models/message";
 import agent from "../API/agent";
 import PrivateMessage from "../Models/PrivateMessage";
@@ -133,6 +133,19 @@ export default class SignalRStore {
         }
     };
 
+    joinGroup = async (groupId: string) => {
+        if (!this.connection) {
+            console.error("Connection not established");
+            return;
+        }
+        try {
+            await this.connection.invoke("JoinChannel", groupId);
+            console.log(`✅ Successfully joined group: ${groupId}`);
+        } catch (error) {
+            console.error("❌ Error joining group:", error);
+        }
+    };
+
     connectToUserChannels = async (userId: string) => {
         if (!this.connection) {
             console.error("Connection not established");
@@ -167,10 +180,9 @@ export default class SignalRStore {
     handleReceiveGroupMessage = (message: GroupMessage) => {
         const key = [message.senderId!, message.groupId].sort().join('-');
         runInAction(() => {
-            console.log("Group message received");
+            console.log("messege received");
             const currentMessages = this.groupMessages.get(key) || [];
             this.groupMessages.set(key, [...currentMessages, message]);
-            console.log("Group messages updated");
         });
     };
     clearMessages = () => {
