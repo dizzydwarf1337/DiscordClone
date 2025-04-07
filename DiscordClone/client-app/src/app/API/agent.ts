@@ -96,6 +96,8 @@ const Friends = {
     GetFriendGroupsByUserId: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friendsgroup/${userId}`, noAuth),
     CreateFriendGroup: (createGroup: CreateGroupDto, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/create`, createGroup, noAuth),
     AddFriendToGroup: (groupId: string, userId: string, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/add/${groupId}/${userId}`, noAuth),
+    RemoveFriendGroup: (groupId: string, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/remove/${groupId}`, noAuth),
+    LeaveFriendGroup: (groupId: string, userId: string, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/leave/${groupId}/${userId}`, noAuth),
 }
 const agent = {
     Auth,

@@ -63,6 +63,34 @@ export default class FriendStore {
             console.log("test");
         }
     };
+
+    removeFriendGroup = async (groupId: string) => {
+        try {
+            this.setFriendLoading(true);
+            const response = await agent.Friends.RemoveFriendGroup(groupId);
+            return response;
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+    };
+
+    leaveFromGroup = async (groupId: string, userId: string) => {
+        try {
+            this.setFriendLoading(true);
+            const response = await agent.Friends.LeaveFriendGroup(groupId, userId);
+            return response;
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+    };
     setFriends = (friends: User[]) => {
         runInAction(() => {
             this.friends = friends;
