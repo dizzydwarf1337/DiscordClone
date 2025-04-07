@@ -64,6 +64,21 @@ export default class FriendStore {
         }
     };
 
+    getGroupMembers = async (groupId: string) => {
+        try {
+            this.setFriendLoading(true);
+            const response = await agent.Friends.GetGroupMembers(groupId)
+            return response;
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+
+    };
+
     removeFriendGroup = async (groupId: string) => {
         try {
             this.setFriendLoading(true);

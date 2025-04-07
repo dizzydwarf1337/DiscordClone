@@ -14,6 +14,7 @@ export default observer(function ChannelDashboard() {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedGroup, setSelectedGroup] = useState<{ id: string, isOwner: boolean } | null>(null);
     const open = Boolean(anchorEl);
+    const [dialogOpen, setDialogOpen] = useState(false);
 
     useEffect(() => {
         const loadFriends = async () => {
@@ -43,6 +44,7 @@ export default observer(function ChannelDashboard() {
     const handleEditGroup = () => {
         if (selectedGroup) {
             console.log("Editing group:", selectedGroup.id);
+            setDialogOpen(true);
             handleClose();
         }
     };
@@ -245,4 +247,4 @@ export default observer(function ChannelDashboard() {
             </Box>
         </Box>
     );
-});
+}); 

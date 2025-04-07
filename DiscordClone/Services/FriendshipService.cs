@@ -223,6 +223,32 @@ public class FriendshipService
 
         return Result<FriendGroupDto>.Success(groupDto);
     }
+
+    // Retrieving Members of a Friend Group
+    public async Task<Result<List<UserDto>>> GetGroupMembersAsync(Guid groupId)
+    {
+        _logger.LogInformation("Fetching members for group: {GroupId}", groupId);
+
+        var group = await _context.FriendGroups
+            .Include(g => g.Members) 
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null)
+        {
+            return Result<List<UserDto>>.Failure("Group not found.");
+        }
+
+        var groupMembers = group.Members.Select(m => new UserDto
+        {
+            Id = m.Id.ToString(),
+            Username = m.UserName,
+            Image = m.AvatarUrl
+        }).ToList();
+
+        _logger.LogInformation("Fetched {MemberCount} members for group: {GroupId}", groupMembers.Count, groupId);
+
+        return Result<List<UserDto>>.Success(groupMembers);
+    }
     // Adding a User to a Friend Group
     public async Task<Result<bool>> AddUserToGroupAsync(Guid userId, Guid groupId)
     {
