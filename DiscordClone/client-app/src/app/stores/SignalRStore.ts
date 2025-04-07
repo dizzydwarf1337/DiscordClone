@@ -1,13 +1,15 @@
 import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
-import { makeAutoObservable, runInAction } from "mobx";
+import { action, makeAutoObservable, observable, ObservableMap, runInAction } from "mobx";
 import Message from "../Models/message";
 import agent from "../API/agent";
 import PrivateMessage from "../Models/PrivateMessage";
+import GroupMessage from "../Models/GroupMessage";
 
 export default class SignalRStore {
     connection: HubConnection | null = null;
     messages: Map<string, Message[]> = new Map();
     privateMessages: Map<string, PrivateMessage[]> = new Map();
+    groupMessages: Map<string, GroupMessage[]> = new Map();
     currentChannel: string = "";
     currentServer: string = "";
     isConnected: boolean = false;
@@ -41,6 +43,7 @@ export default class SignalRStore {
                 console.log("Connection started");
                 this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
                 this.connection.on("ReceiveMessage", this.handleReceiveMessage);
+                this.connection.on("ReceiveGroupMessage", this.handleReceiveGroupMessage);
 
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const userId = user.id;
@@ -89,6 +92,19 @@ export default class SignalRStore {
             console.error("Error sending message:", error);
         }
     };
+    sendGroupMessage = async (message: GroupMessage) => {
+        if (!this.connection) {
+            console.error("Not connected to a group");
+            return;
+        }
+        try {
+            console.log("sending: " ,message)
+            await agent.Messages.SendGroupMessage(message);
+            console.log("Message sent");
+        } catch (error) {
+            console.error("Error sending message:", error);
+        }
+    };
     sendPrivateMessage = async (message: PrivateMessage) => {
         if (!this.connection) {
             console.error("Not connected to a channel");
@@ -114,6 +130,19 @@ export default class SignalRStore {
             console.log(`Successfully joined channel ${channelName} on server ${serverName}`);
         } catch (error) {
             console.error("Error joining channel:", error);
+        }
+    };
+
+    joinGroup = async (groupId: string) => {
+        if (!this.connection) {
+            console.error("Connection not established");
+            return;
+        }
+        try {
+            await this.connection.invoke("JoinChannel", groupId);
+            console.log(`✅ Successfully joined group: ${groupId}`);
+        } catch (error) {
+            console.error("❌ Error joining group:", error);
         }
     };
 
@@ -146,6 +175,14 @@ export default class SignalRStore {
             const currentMessages = this.privateMessages.get(key) || [];
             this.privateMessages.set(key, [...currentMessages, message]);
             console.log("Private messages updated:", this.privateMessages);
+        });
+    };
+    handleReceiveGroupMessage = (message: GroupMessage) => {
+        const key = [message.senderId!, message.groupId].sort().join('-');
+        runInAction(() => {
+            console.log("messege received");
+            const currentMessages = this.groupMessages.get(key) || [];
+            this.groupMessages.set(key, [...currentMessages, message]);
         });
     };
     clearMessages = () => {

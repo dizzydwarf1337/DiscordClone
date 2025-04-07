@@ -4,6 +4,8 @@ import FriendRequest from "../Models/FriendRequest";
 import agent from "../API/agent";
 import FriendsUsernameRequest from "../Models/FriendsUsernameRequest";
 import PrivateMessage from "../Models/PrivateMessage";
+import { FriendGroup } from "../Models/FriendGroup";
+import { CreateGroupDto } from "../Models/CreateGroupDto";
 
 
 export default class FriendStore {
@@ -16,7 +18,94 @@ export default class FriendStore {
     friendRequests: FriendRequest[] = [];
     friendLoading: boolean = false;
     selectedFriend: User | null = null;
+    friendGroups: FriendGroup[] = [];
 
+    setFriendGroups = (groups: FriendGroup[]) => {
+        this.friendGroups = groups;
+    };
+
+    getFriendGroupsByUserId = async (userId: string) => {
+        try {
+            this.setFriendLoading(true);
+            const response = await agent.Friends.GetFriendGroupsByUserId(userId);
+            return response; 
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+    };
+
+    createFriendGroup = async (createGroup: CreateGroupDto) => {
+            try {
+            const response = await agent.Friends.CreateFriendGroup(createGroup);
+            return response; 
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+    };
+
+    addFriendToGroup = async (groupId: string, userId: string) => {
+        try {
+            const response = await agent.Friends.AddFriendToGroup(groupId, userId);
+            return response;
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            console.log("test");
+        }
+    };
+
+    getGroupMembers = async (groupId: string) => {
+        try {
+            this.setFriendLoading(true);
+            const response = await agent.Friends.GetGroupMembers(groupId)
+            return response;
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+
+    };
+
+    removeFriendGroup = async (groupId: string) => {
+        try {
+            this.setFriendLoading(true);
+            const response = await agent.Friends.RemoveFriendGroup(groupId);
+            return response;
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+    };
+
+    leaveFromGroup = async (groupId: string, userId: string) => {
+        try {
+            this.setFriendLoading(true);
+            const response = await agent.Friends.LeaveFriendGroup(groupId, userId);
+            return response;
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+    };
     setFriends = (friends: User[]) => {
         runInAction(() => {
             this.friends = friends;

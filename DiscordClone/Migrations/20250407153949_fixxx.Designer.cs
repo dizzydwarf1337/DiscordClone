@@ -4,6 +4,7 @@ using DiscordClone.Db;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DiscordClone.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    partial class ApplicationContextModelSnapshot : ModelSnapshot
+    [Migration("20250407153949_fixxx")]
+    partial class fixxx
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -611,6 +614,9 @@ namespace DiscordClone.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("FriendGroupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("IsOnline")
                         .HasColumnType("bit");
 
@@ -648,6 +654,8 @@ namespace DiscordClone.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FriendGroupId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -757,21 +765,6 @@ namespace DiscordClone.Migrations
                     b.HasIndex("CreatorId");
 
                     b.ToTable("FriendGroups");
-                });
-
-            modelBuilder.Entity("FriendGroupUser", b =>
-                {
-                    b.Property<Guid>("FriendGroupId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("FriendGroupId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("FriendGroupUser");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -993,7 +986,7 @@ namespace DiscordClone.Migrations
                     b.HasOne("FriendGroup", "Group")
                         .WithMany()
                         .HasForeignKey("GroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("DiscordClone.Models.User", "Sender")
@@ -1246,6 +1239,13 @@ namespace DiscordClone.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DiscordClone.Models.User", b =>
+                {
+                    b.HasOne("FriendGroup", null)
+                        .WithMany("Members")
+                        .HasForeignKey("FriendGroupId");
+                });
+
             modelBuilder.Entity("DiscordClone.Models.UserActivityLog", b =>
                 {
                     b.HasOne("DiscordClone.Models.User", "User")
@@ -1312,21 +1312,6 @@ namespace DiscordClone.Migrations
                         .IsRequired();
 
                     b.Navigation("Creator");
-                });
-
-            modelBuilder.Entity("FriendGroupUser", b =>
-                {
-                    b.HasOne("FriendGroup", null)
-                        .WithMany()
-                        .HasForeignKey("FriendGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DiscordClone.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -1454,6 +1439,11 @@ namespace DiscordClone.Migrations
                     b.Navigation("ServerMembers");
 
                     b.Navigation("VoiceSessions");
+                });
+
+            modelBuilder.Entity("FriendGroup", b =>
+                {
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

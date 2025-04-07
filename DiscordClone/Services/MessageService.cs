@@ -1,4 +1,5 @@
-﻿using DiscordClone.Db;
+﻿using System.Text.RegularExpressions;
+using DiscordClone.Db;
 using DiscordClone.Hubs;
 using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
@@ -56,6 +57,24 @@ namespace DiscordClone.Services
             await _applicationContext.PrivateMessages.AddAsync(message);
             await _applicationContext.SaveChangesAsync();
             await _chatHub.SendPrivateMessage(messageDto);
+        }
+        public async Task SendGroupMessage(GroupMessageDto messageDto)
+        {
+            var sender = await _applicationContext.Users.FindAsync(messageDto.SenderId)
+                         ?? throw new Exception("Sender not found");
+            var receiver = await _applicationContext.FriendGroups.FindAsync(messageDto.GroupId)
+                           ?? throw new Exception("Receiving group not found");
+
+            var message = new GroupMessage
+            {
+                SenderId = messageDto.SenderId,
+                GroupId = messageDto.GroupId,
+                SentAt = DateTime.UtcNow,
+                Content = messageDto.Content,
+            };
+            await _applicationContext.GroupMessages.AddAsync(message);
+            await _applicationContext.SaveChangesAsync();
+            await _chatHub.SendGroupMessage(messageDto);
         }
 
         public async Task AddReactionAsync(AddReactionDto addReactionDto)
@@ -247,6 +266,31 @@ namespace DiscordClone.Services
             }
             _logger.LogInformation($"private messagesdtos count:{privateMessageDtos.Count}");
             return Result<List<PrivateMessageDto>>.Success(privateMessageDtos);
+        }
+
+        public async Task<Result<List<GroupMessageDto>>> GetGroupMessagesFromLastDays(Guid userId, Guid groupId, int days)
+        {
+            var fromDate = DateTime.UtcNow.AddDays(-days);
+            var messages = await _applicationContext.GroupMessages
+                .Include(m => m.Sender)           // Include the User data (already present)
+                .Include(m => m.Reactions)      // Include the Reactions collection
+                .Where(m => m.GroupId == groupId && m.SentAt >= fromDate)
+                .ToListAsync();
+
+            if (messages == null || messages.Count == 0)
+            {
+                return Result<List<GroupMessageDto>>.Success(new List<GroupMessageDto>());
+            }
+
+            var messageDtos = messages.Select(m => new GroupMessageDto
+            {
+                MessageId = m.MessageId,
+                Content = m.Content,
+                SentAt = m.SentAt,
+                SenderId = m.SenderId,
+            }).OrderBy(x => x.SentAt).ToList();
+
+            return Result<List<GroupMessageDto>>.Success(messageDtos);
         }
     }
 }

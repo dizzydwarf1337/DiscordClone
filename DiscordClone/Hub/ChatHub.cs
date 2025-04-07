@@ -68,6 +68,11 @@ namespace DiscordClone.Hubs
                 Console.WriteLine("Receiver not connected");
             }
         }
+
+        public async Task SendGroupMessage(GroupMessageDto groupMessageDto)
+        {
+            await Clients.Group($"{groupMessageDto.GroupId}").SendAsync("ReceiveGroupMessage", groupMessageDto);
+        }
         public async Task SendMessage(MessageDto messageDto, string groupName)
         {
             await Clients.Group(groupName).SendAsync("ReceiveMessage", messageDto);

@@ -1,26 +1,80 @@
 import { observer } from "mobx-react-lite";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "../../../app/stores/store";
-import { Box, Typography, Divider } from "@mui/material";
-import {  Outlet, useNavigate, useParams } from "react-router-dom";
+import { Box, Typography, Divider, IconButton, Menu, MenuItem, ListItemIcon } from "@mui/material";
+import { Outlet, useNavigate } from "react-router-dom";
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 export default observer(function ChannelDashboard() {
     const { userStore, friendStore } = useStore();
     const navigate = useNavigate();
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedGroup, setSelectedGroup] = useState<{ id: string, isOwner: boolean } | null>(null);
+    const open = Boolean(anchorEl);
+    const [dialogOpen, setDialogOpen] = useState(false);
+
     useEffect(() => {
         const loadFriends = async () => {
             friendStore.setFriends(await friendStore.GetUserFriendsById(userStore.user!.id));
-        }
+            const groups = await friendStore.getFriendGroupsByUserId(userStore.user!.id);
+            console.log("Friend groups fetched:", groups);
+            friendStore.setFriendGroups(groups || []);
+        };
         loadFriends();
     }, [friendStore, userStore]);
 
     const handleClick = (friendId: string) => {
         navigate('/main/friend/' + friendId);
-    }
+    };
 
-    const handleCallClick = (friendId: string) => {
-        alert(`Calling ${friendId}`);
-    }
+    const handleGroupMenuClick = (event: React.MouseEvent<HTMLElement>, groupId: string, isOwner: boolean) => {
+        event.stopPropagation();
+        setSelectedGroup({ id: groupId, isOwner });
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+        setSelectedGroup(null);
+    };
+
+    const handleEditGroup = () => {
+        if (selectedGroup) {
+            console.log("Editing group:", selectedGroup.id);
+            setDialogOpen(true);
+            handleClose();
+        }
+    };
+
+    const handleDeleteGroup = async () => {
+        if (selectedGroup) {
+            try {
+                await friendStore.removeFriendGroup(selectedGroup.id);
+                const groups = await friendStore.getFriendGroupsByUserId(userStore.user!.id);
+                friendStore.setFriendGroups(groups || []);
+            } catch (error) {
+                console.error("Failed to delete group:", error);
+            }
+            handleClose();
+        }
+    };
+
+    const handleLeaveGroup = async () => {
+        if (selectedGroup && userStore.user) {
+            try {
+                await friendStore.leaveFromGroup(userStore.user.id, selectedGroup.id);
+                const groups = await friendStore.getFriendGroupsByUserId(userStore.user.id);
+                friendStore.setFriendGroups(groups || []);
+            } catch (error) {
+                console.error("Failed to leave group:", error);
+            }
+            handleClose();
+        }
+    };
+
     return (
         <Box display="flex" flexDirection="row" height="91vh" width="96vw" sx={{ backgroundColor: "#4E4E4E" }}>
             {/* Left sidebar for friends */}
@@ -32,14 +86,49 @@ export default observer(function ChannelDashboard() {
                 ml="16px"
                 sx={{
                     backgroundColor: "#4E4E4E",
-                    width: "17vw", // 20% of viewport width
+                    width: "17vw",
                     flexShrink: 0,
                 }}
             >
-                <Typography variant="h6">Friends</Typography>
-
+                <Typography variant="h6">Friends groups</Typography>
                 <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
+                {friendStore.friendGroups?.length > 0 ? (
+                    friendStore.friendGroups.map((group) => (
+                        <Box
+                            key={group.id}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            width="85%"
+                            height="40px"
+                            sx={{
+                                backgroundColor: "#333333",
+                                borderRadius: "10px",
+                                mb: "10px",
+                                px: "12px",
+                                '&:hover': {
+                                    backgroundColor: "#444444",
+                                    cursor: "pointer"
+                                }
+                            }}
+                            onClick={() => navigate(`/main/group/${group.id}`)}
+                        >
+                            <Typography variant="body1" color="white">{group.name}</Typography>
+                            <IconButton
+                                size="small"
+                                onClick={(e) => handleGroupMenuClick(e, group.id, group.creatorId === userStore.user?.id)}
+                                sx={{ color: 'white' }}
+                            >
+                                <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    ))
+                ) : (
+                    <Typography variant="body2" color="gray">No groups yet</Typography>
+                )}
 
+                <Typography variant="h6">Friends</Typography>
+                <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
                 {friendStore.friends ? (
                     friendStore.friends.map((friend) => (
                         <Box
@@ -73,10 +162,8 @@ export default observer(function ChannelDashboard() {
                                         backgroundPosition: "center",
                                     }}
                                 />
-                                <Typography ml="auto"
-                                    mr="auto" variant="body1">{friend.username}</Typography>
+                                <Typography ml="auto" mr="auto" variant="body1">{friend.username}</Typography>
                             </Box>
-                            {/*<a onClick={(e) => { e.stopPropagation(); handleCallClick(friend.id); }}>Call</a>*/}
                         </Box>
                     ))
                 ) : (
@@ -86,18 +173,78 @@ export default observer(function ChannelDashboard() {
                 )}
             </Box>
 
+            {/* Group management menu */}
+            <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+                onClick={(e) => e.stopPropagation()}
+                PaperProps={{
+                    elevation: 0,
+                    sx: {
+                        overflow: 'visible',
+                        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                        mt: 1.5,
+                        '& .MuiAvatar-root': {
+                            width: 32,
+                            height: 32,
+                            ml: -0.5,
+                            mr: 1,
+                        },
+                        '&:before': {
+                            content: '""',
+                            display: 'block',
+                            position: 'absolute',
+                            top: 0,
+                            right: 14,
+                            width: 10,
+                            height: 10,
+                            bgcolor: 'background.paper',
+                            transform: 'translateY(-50%) rotate(45deg)',
+                            zIndex: 0,
+                        },
+                    },
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+                {selectedGroup?.isOwner ? (
+                    [
+                        <MenuItem key="edit" onClick={handleEditGroup}>
+                            <ListItemIcon>
+                                <EditIcon fontSize="small" />
+                            </ListItemIcon>
+                            Edit
+                        </MenuItem>,
+                        <MenuItem key="delete" onClick={handleDeleteGroup}>
+                            <ListItemIcon>
+                                <DeleteIcon fontSize="small" />
+                            </ListItemIcon>
+                            Delete
+                        </MenuItem>
+                    ]
+                ) : (
+                    <MenuItem key="leave" onClick={handleLeaveGroup}>
+                        <ListItemIcon>
+                            <ExitToAppIcon fontSize="small" />
+                        </ListItemIcon>
+                        Leave group
+                    </MenuItem>
+                )}
+            </Menu>
+
             {/* Main content area */}
             <Box
                 display="flex"
                 sx={{
                     flexGrow: 1,
-                    backgroundColor: "#1B1B1B", //#060018
+                    backgroundColor: "#1B1B1B",
                     height: "100%",
-                    width: "80vw", // 80% of viewport width
+                    width: "80vw",
                 }}
             >
                 <Outlet />
             </Box>
         </Box>
     );
-});
+}); 

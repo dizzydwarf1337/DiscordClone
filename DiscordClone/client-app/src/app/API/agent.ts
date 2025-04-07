@@ -13,6 +13,8 @@ import  Message  from '../Models/message';
 import FriendRequest from '../Models/FriendRequest';
 import FriendsUsernameRequest from '../Models/FriendsUsernameRequest';
 import PrivateMessage from '../Models/PrivateMessage';
+import { CreateGroupDto } from '../Models/CreateGroupDto';
+import GroupMessage from '../Models/GroupMessage';
 
 
 axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -78,7 +80,9 @@ const Channels = {
 const Messages = {
     SendMessage: (messageDto: Message, noAuth = false) => requests.post<ApiResponseModel>('message/send', messageDto, noAuth),
     SendPrivateMessage:(messageDto: PrivateMessage, noAuth = false) => requests.post<ApiResponseModel>('message/send/private',messageDto, noAuth),
+    SendGroupMessage:(messageDto: GroupMessage, noAuth = false) => requests.post<ApiResponseModel>('message/send/group',messageDto, noAuth),
     GetAllMessages: (channelId: string, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}`, noAuth),
+    GetGroupMessagesFromLastDays: (userId: string, groupId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/group/${userId}/${groupId}/${days}`, noAuth),
     GetMessagesFromLastDays: (channelId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}/last/${days}`, noAuth),
     GetPrivateMessagesFromNDays: (user1: string, user2: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/private/${user1}/${user2}/${days}`, noAuth),
 }
@@ -89,7 +93,12 @@ const Friends = {
     RejectFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/reject', friendRequest, noAuth),
     GetUserFriendsById: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friends/${userId}`, noAuth),
     GetUserFriendRequestsById: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/requests/${userId}`, noAuth),
-
+    GetFriendGroupsByUserId: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friendsgroup/${userId}`, noAuth),
+    CreateFriendGroup: (createGroup: CreateGroupDto, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/create`, createGroup, noAuth),
+    AddFriendToGroup: (groupId: string, userId: string, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/add/${groupId}/${userId}`, noAuth),
+    RemoveFriendGroup: (groupId: string, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/remove/${groupId}`, noAuth),
+    LeaveFriendGroup: (groupId: string, userId: string, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/leave/${groupId}/${userId}`, noAuth),
+    GetGroupMembers: (groupId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friendsgroup/members/${groupId}`, noAuth),
 }
 const agent = {
     Auth,
