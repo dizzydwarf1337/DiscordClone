@@ -76,7 +76,6 @@ export default class FriendStore {
         finally {
             this.setFriendLoading(false);
         }
-
     };
 
     removeFriendGroup = async (groupId: string) => {

@@ -7,14 +7,25 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import GroupManagementDialog from "../groups/groupManagmentDialog";
+import { User } from "../../../app/Models/user";
 
 export default observer(function ChannelDashboard() {
     const { userStore, friendStore } = useStore();
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const [selectedGroup, setSelectedGroup] = useState<{ id: string, isOwner: boolean } | null>(null);
+    const [selectedGroup, setSelectedGroup] = useState<{ id: string, name: string, isOwner: boolean, members: User[] } | null>(null);
     const open = Boolean(anchorEl);
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+    const handleOpenEditDialog = () => {
+        handleClose();
+        setIsDialogOpen(true);
+    }
+    const closeDialog = () => setIsDialogOpen(false);
+
+    const handleSaveGroup = () => {
+        //setGroup(updatedGroup);
+    };
 
     useEffect(() => {
         const loadFriends = async () => {
@@ -30,23 +41,15 @@ export default observer(function ChannelDashboard() {
         navigate('/main/friend/' + friendId);
     };
 
-    const handleGroupMenuClick = (event: React.MouseEvent<HTMLElement>, groupId: string, isOwner: boolean) => {
+    const handleGroupMenuClick = (event: React.MouseEvent<HTMLElement>, groupId: string, name: string, isOwner: boolean, members: User[]) => {
         event.stopPropagation();
-        setSelectedGroup({ id: groupId, isOwner });
+        setSelectedGroup({ id: groupId, name, isOwner, members});
         setAnchorEl(event.currentTarget);
     };
 
     const handleClose = () => {
         setAnchorEl(null);
         setSelectedGroup(null);
-    };
-
-    const handleEditGroup = () => {
-        if (selectedGroup) {
-            console.log("Editing group:", selectedGroup.id);
-            setDialogOpen(true);
-            handleClose();
-        }
     };
 
     const handleDeleteGroup = async () => {
@@ -77,6 +80,13 @@ export default observer(function ChannelDashboard() {
 
     return (
         <Box display="flex" flexDirection="row" height="91vh" width="96vw" sx={{ backgroundColor: "#4E4E4E" }}>
+
+            <GroupManagementDialog
+        isOpen={isDialogOpen && selectedGroup !== null}
+        group={selectedGroup ?? { id: '', name: '', isOwner: false, members: [] }}
+        onClose={closeDialog}
+        onSave={handleSaveGroup}
+        />
             {/* Left sidebar for friends */}
             <Box
                 display="flex"
@@ -116,7 +126,7 @@ export default observer(function ChannelDashboard() {
                             <Typography variant="body1" color="white">{group.name}</Typography>
                             <IconButton
                                 size="small"
-                                onClick={(e) => handleGroupMenuClick(e, group.id, group.creatorId === userStore.user?.id)}
+                                onClick={(e) => handleGroupMenuClick(e, group.id, group.name, group.creatorId === userStore.user?.id, group.members)}
                                 sx={{ color: 'white' }}
                             >
                                 <MoreVertIcon fontSize="small" />
@@ -210,7 +220,7 @@ export default observer(function ChannelDashboard() {
             >
                 {selectedGroup?.isOwner ? (
                     [
-                        <MenuItem key="edit" onClick={handleEditGroup}>
+                        <MenuItem key="edit" onClick={handleOpenEditDialog}>
                             <ListItemIcon>
                                 <EditIcon fontSize="small" />
                             </ListItemIcon>
