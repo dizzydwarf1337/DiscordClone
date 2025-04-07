@@ -18,7 +18,7 @@ export default observer(function ChannelDashboard() {
     const open = Boolean(anchorEl);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
     const handleOpenEditDialog = () => {
-        handleClose();
+        setAnchorEl(null);
         setIsDialogOpen(true);
     }
     const closeDialog = () => setIsDialogOpen(false);
