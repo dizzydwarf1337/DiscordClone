@@ -51,7 +51,18 @@ export default class FriendStore {
         }
     };
 
-  //  addFriendToGroup = async ()
+    addFriendToGroup = async (groupId: string, userId: string) => {
+        try {
+            const response = await agent.Friends.AddFriendToGroup(groupId, userId);
+            return response;
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            console.log("test");
+        }
+    };
     setFriends = (friends: User[]) => {
         runInAction(() => {
             this.friends = friends;

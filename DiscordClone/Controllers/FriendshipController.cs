@@ -77,8 +77,8 @@ namespace DiscordClone.Controllers
             return HandleResult(result);
         }
 
-        [HttpPost("friendsGroup/{userId}/{groupId}")]
-        public async Task<IActionResult> AddFriendToGroupById(Guid userId, Guid groupId)
+        [HttpPost("friendsGroup/add/{groupId}/{userId}")]
+        public async Task<IActionResult> AddFriendToGroupById(Guid groupId, Guid userId)
         {
             return HandleResult(await _friendshipService.AddUserToGroupAsync(userId, groupId));
         }

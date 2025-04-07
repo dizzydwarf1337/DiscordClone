@@ -19,30 +19,40 @@ export const CreateGroupDialog = ({ open, onClose }: CreateGroupDialogProps) => 
     const [friends, setFriends] = useState<User[]>([]); // Store all friends
 
     useEffect(() => {
+        if (!open) return; 
+
         const fetchedUser = userStore.getUser();
         setUser(fetchedUser);
 
-        // Fetch the list of friends
         const fetchFriends = async () => {
-            const friendList = await friendStore.getFriends(); 
-            setFriends(friendList);
+            try {
+                const friendList = await friendStore.getFriends(); 
+                setFriends(friendList);
+            } catch (error) {
+                console.error("Error fetching friends:", error);
+            }
         };
 
         if (fetchedUser) {
             fetchFriends();
         }
-    }, [userStore, friendStore]);
+    }, [open, userStore, friendStore]);
 
     const handleCreateGroup = async () => {
         const newGroup: CreateGroupDto = {
             CreatorId: user!.id,
             GroupName: groupName,
-           // FriendIds: selectedFriends, // Add selected friends to the group
         };
 
-        const response = await friendStore.createFriendGroup(newGroup); // Assuming this function handles the API call
+        const response = await friendStore.createFriendGroup(newGroup); 
         console.log("Group Created:", groupName, "Response:", response);
-        //const response2 = await friendStore.(newGroup); // Assuming this function handles the API call
+        console.log("id: ", response.id);
+
+        await Promise.all(
+            selectedFriends.map((friendId) =>
+            friendStore.addFriendToGroup(response.id, friendId)
+        )
+        );
         onClose();
     };
 
