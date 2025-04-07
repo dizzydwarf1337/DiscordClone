@@ -81,6 +81,19 @@ namespace DiscordClone.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+        [HttpPost("send/group")]
+        public async Task<IActionResult> SendGroupMessage(GroupMessageDto messageDto)
+        {
+            try
+            {
+                await _messageService.SendGroupMessage(messageDto);
+                return Ok(new { message = "Private message sent successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
             // GET: api/message/{channelId}
        [HttpGet("{channelId}")]
         public async Task<IActionResult> GetAllMessages(Guid channelId)
@@ -100,6 +113,12 @@ namespace DiscordClone.Controllers
         public async Task<IActionResult> GetPrivateMessagesFromNDays(Guid user1, Guid user2,int n)
         {
             return HandleResult(await _messageService.GetPrivateMessagesFromLastNDays(user1, user2,n));
+        }
+
+        [HttpGet("group/{userId}/{groupId}/{n}")]
+        public async Task<IActionResult> GetGroupMessagesFromNDays(Guid userId, Guid groupId, int n)
+        {
+            return HandleResult(await _messageService.GetGroupMessagesFromLastDays(userId, groupId,n));
         }
     }
 }

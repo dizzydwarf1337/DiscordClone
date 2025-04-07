@@ -170,6 +170,37 @@ namespace DiscordClone.Migrations
                     b.ToTable("Friendships");
                 });
 
+            modelBuilder.Entity("DiscordClone.Models.GroupMessage", b =>
+                {
+                    b.Property<Guid>("MessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("MessageId");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("GroupMessages");
+                });
+
             modelBuilder.Entity("DiscordClone.Models.Invite", b =>
                 {
                     b.Property<Guid>("InviteId")
@@ -399,6 +430,9 @@ namespace DiscordClone.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("GroupMessageMessageId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("MessageId")
                         .HasColumnType("uniqueidentifier");
 
@@ -414,6 +448,8 @@ namespace DiscordClone.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("ReactionId");
+
+                    b.HasIndex("GroupMessageMessageId");
 
                     b.HasIndex("MessageId");
 
@@ -942,6 +978,25 @@ namespace DiscordClone.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("DiscordClone.Models.GroupMessage", b =>
+                {
+                    b.HasOne("FriendGroup", "Group")
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("DiscordClone.Models.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Sender");
+                });
+
             modelBuilder.Entity("DiscordClone.Models.Invite", b =>
                 {
                     b.HasOne("DiscordClone.Models.User", "Inviter")
@@ -1078,7 +1133,7 @@ namespace DiscordClone.Migrations
                     b.HasOne("DiscordClone.Models.User", "Sender")
                         .WithMany()
                         .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Receiver");
@@ -1088,6 +1143,10 @@ namespace DiscordClone.Migrations
 
             modelBuilder.Entity("DiscordClone.Models.Reaction", b =>
                 {
+                    b.HasOne("DiscordClone.Models.GroupMessage", null)
+                        .WithMany("Reactions")
+                        .HasForeignKey("GroupMessageMessageId");
+
                     b.HasOne("DiscordClone.Models.Message", "Message")
                         .WithMany("Reactions")
                         .HasForeignKey("MessageId")
@@ -1246,7 +1305,7 @@ namespace DiscordClone.Migrations
                     b.HasOne("DiscordClone.Models.User", "Creator")
                         .WithMany()
                         .HasForeignKey("CreatorId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Creator");
@@ -1312,6 +1371,11 @@ namespace DiscordClone.Migrations
                     b.Navigation("Polls");
 
                     b.Navigation("VoiceSessions");
+                });
+
+            modelBuilder.Entity("DiscordClone.Models.GroupMessage", b =>
+                {
+                    b.Navigation("Reactions");
                 });
 
             modelBuilder.Entity("DiscordClone.Models.Message", b =>

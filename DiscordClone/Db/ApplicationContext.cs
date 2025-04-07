@@ -32,6 +32,8 @@ namespace DiscordClone.Db
         public DbSet<PinnedMessage> PinnedMessages { get; set; }
         public DbSet<Friendship> Friendships { get; set; }
         public DbSet<PrivateMessage> PrivateMessages { get; set; }
+
+        public DbSet<GroupMessage> GroupMessages {get; set;}
         public DbSet<FriendGroup> FriendGroups { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -67,6 +69,24 @@ namespace DiscordClone.Db
                 .WithOne(f => f.Receiver)
                 .HasForeignKey(f => f.ReceiverId)
                 .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<GroupMessage>()
+                .HasOne(gm => gm.Group)
+                .WithMany() // Assuming no navigation property from Group to GroupMessages
+                .HasForeignKey(gm => gm.GroupId)
+                .OnDelete(DeleteBehavior.NoAction);  // Disable cascade delete
+
+            modelBuilder.Entity<FriendGroup>()
+                .HasOne(fg => fg.Creator)
+                .WithMany() // Assuming no navigation property from User to FriendGroups
+                .HasForeignKey(fg => fg.CreatorId)
+                .OnDelete(DeleteBehavior.NoAction);  // Disable cascade delete
+
+            modelBuilder.Entity<PrivateMessage>()
+    .HasOne(pm => pm.Sender)
+    .WithMany() // Assuming no navigation property in User to PrivateMessages
+    .HasForeignKey(pm => pm.SenderId)
+    .OnDelete(DeleteBehavior.NoAction); // Prevent cascade delete
+
         }
     }
 

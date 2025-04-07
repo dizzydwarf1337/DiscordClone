@@ -9,6 +9,7 @@ import ChannelDashboard from "../../features/User/server/channelDashboard";
 import ChannelProfile from "../../features/User/server/channelProfile";
 import FriendChatProfile from "../../features/User/friends/friendChatProfile";
 import FriendsDashboard from "../../features/User/friends/friendsDashboard";
+import GroupChatProfile from "../../features/User/groups/groupChatProfile";
 
 export const routes: RouteObject[] = [
     {
@@ -28,6 +29,7 @@ export const routes: RouteObject[] = [
                 path: 'main', element: <FriendsDashboard />, children: 
                     [
                         { path: "friend/:friendId", element: <FriendChatProfile /> },
+                        { path: "group/:groupId", element: <GroupChatProfile /> },
                     ]
                 
             },
