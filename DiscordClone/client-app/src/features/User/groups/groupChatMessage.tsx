@@ -13,8 +13,6 @@ export default function GroupChatMessage({ message }: Props) {
             justifyContent="center"
             alignItems="center"
             width="90%"
-            onMouseEnter={() => setShowReactions(true)}
-            onMouseLeave={() => setShowReactions(false)}
             sx={{ position: "relative" }}
         >
             <Box display="flex" flexDirection="column" marginRight="15px">

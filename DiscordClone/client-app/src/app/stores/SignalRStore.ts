@@ -43,7 +43,7 @@ export default class SignalRStore {
                 console.log("Connection started");
                 this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
                 this.connection.on("ReceiveMessage", this.handleReceiveMessage);
-                this.connection.on("ReceiveGroupMessage", this.handleReceiveMessage);
+                this.connection.on("ReceiveGroupMessage", this.handleReceiveGroupMessage);
 
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const userId = user.id;
@@ -98,6 +98,7 @@ export default class SignalRStore {
             return;
         }
         try {
+            console.log("sending: " ,message)
             await agent.Messages.SendGroupMessage(message);
             console.log("Message sent");
         } catch (error) {

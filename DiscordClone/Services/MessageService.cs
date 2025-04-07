@@ -288,12 +288,6 @@ namespace DiscordClone.Services
                 Content = m.Content,
                 SentAt = m.SentAt,
                 SenderId = m.SenderId,
-                SenderName = m.Sender.UserName,
-                Reactions = m.Reactions != null ? m.Reactions.Select(r => new ReactionDto
-                {
-                    UserId = r.UserId,
-                    ReactionType = r.ReactionType,
-                }).ToList() : new List<ReactionDto>() // Ensure to handle null Reactions
             }).OrderBy(x => x.SentAt).ToList();
 
             return Result<List<GroupMessageDto>>.Success(messageDtos);
