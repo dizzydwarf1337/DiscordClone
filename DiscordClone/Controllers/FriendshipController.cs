@@ -90,7 +90,7 @@ namespace DiscordClone.Controllers
         [HttpPost("friendsGroup/leave/{groupId}/{userId}")]
         public async Task<IActionResult> LeaveGroup(Guid groupId, Guid userId)
         {
-            return HandleResult(await _friendshipService.RemoveUserFromGroupAsync(groupId, userId));
+            return HandleResult(await _friendshipService.RemoveUserFromGroupAsync(userId, groupId));
         }
 
 
