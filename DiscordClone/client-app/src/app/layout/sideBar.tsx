@@ -85,7 +85,7 @@ export default observer(function SideBar() {
                         <Box sx={{
                             borderRadius: "20px", height: "50px", width: "50px", fontSize: "10px", display: "flex",
                             alignItems: "center", justifyContent: "center", color: "black",
-                            cursor: "pointer", backgroundColor: "lightgray",
+                            cursor: "pointer", backgroundColor: "lightgray", textAlign: "center"
                         }}
                             onClick={() => setOpenCreateGroup(true)}
                         >
