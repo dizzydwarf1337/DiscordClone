@@ -72,15 +72,15 @@ export default function GroupManagementDialog({
       }
 
       const isAlreadyMember = members.some(
-        (member) => member.username === userToAdd.username
+        (member) => member.username === userToAdd.data.username
       );
 
       if (isAlreadyMember) {
         alert('User is already in the group.');
         return;
       }
-      await friendStore.addFriendToGroup(group.id, userToAdd.id);
-      setMembers([...members, userToAdd]);
+      await friendStore.addFriendToGroup(group.id, userToAdd.data.id);
+      setMembers([...members, userToAdd.data]);
       setNewMemberUsername('');
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -90,6 +90,7 @@ export default function GroupManagementDialog({
 
   const handleRemoveMember = async (member: User) => {
     try {
+      console.log(group, member);
       const response = await friendStore.leaveFromGroup(group.id, member.id)
       console.log(response);
     }

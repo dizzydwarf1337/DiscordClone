@@ -1,9 +1,8 @@
 import { observer } from "mobx-react-lite";
 import { useStore } from "../../../app/stores/store";
 import { Box, TextField } from "@mui/material";
-import GroupMessage from "../../../app/Models/GroupMessage";
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { runInAction } from "mobx";
 import GroupChatMessage from "./groupChatMessage";
 import GroupChatMessageTextField from "./groupChatMessageTextField";
@@ -12,25 +11,27 @@ import agent from "../../../app/API/agent";
 export default observer(function GroupChatProfile() {
     const { userStore, signalRStore } = useStore();
     const { groupId } = useParams();
-    const key = [userStore.user!.id, groupId].sort().join('-');
     const [page, setPage] = useState<number>(1);
     const [searchQuery, setSearchQuery] = useState<string>("");
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-    // Stan na przefiltrowane wiadomości
-    const [filteredMessages, setFilteredMessages] = useState<GroupMessage[]>([]);
+    const userId = userStore.user?.id;
+    const key = groupId!;
 
     // Pobieranie wiadomości
     useEffect(() => {
         const loadMessages = async () => {
+            if (!userId || !groupId) return;
+
             try {
                 const newMessages = await agent.Messages.GetGroupMessagesFromLastDays(
-                    userStore.user!.id,
-                    groupId!,
+                    userId,
+                    groupId,
                     page
                 );
-                signalRStore.joinGroup(groupId); // Przypisanie do grupy SignalR
 
-                // Używanie runInAction, aby zaktualizować stan
+                await signalRStore.joinGroup(groupId); // Dołączenie do grupy SignalR
+
                 runInAction(() => {
                     signalRStore.groupMessages.set(key, newMessages);
                 });
@@ -39,19 +40,19 @@ export default observer(function GroupChatProfile() {
             }
         };
 
-        if (groupId) {
-            loadMessages();
-        }
-    }, [groupId, page, signalRStore.groupMessages]);
+        loadMessages();
+    }, [groupId, page, userId]);
 
-    // Automatyczne filtrowanie wiadomości po przyjściu nowej
+    const allMessages = signalRStore.groupMessages.get(key) || [];
+    const filteredMessages = allMessages.filter((message) =>
+        message.content.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     useEffect(() => {
-        const allMessages = signalRStore.groupMessages.get(key) || [];
-        const filtered = allMessages.filter((message) =>
-            message.content.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setFilteredMessages(filtered); // Ustawianie przefiltrowanych wiadomości w stanie
-    }, [searchQuery, signalRStore.groupMessages.get(key)?.length]);
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [filteredMessages.length]);
 
     return (
         <Box display="flex" flexDirection="column" height="90vh" width="100%" sx={{ overflow: "hidden" }}>
@@ -67,7 +68,7 @@ export default observer(function GroupChatProfile() {
 
             <Box
                 display="flex"
-                flexDirection="column-reverse"
+                flexDirection="column"
                 overflow="auto"
                 sx={{
                     flexGrow: 1,
@@ -81,19 +82,18 @@ export default observer(function GroupChatProfile() {
                             key={message.messageId}
                             sx={{
                                 display: "flex",
-                                justifyContent: message.senderId === userStore.user?.id ? "flex-end" : "flex-start",
+                                justifyContent: message.senderId === userId ? "flex-end" : "flex-start",
                                 p: "10px",
                             }}
                         >
                             <Box
                                 sx={{
-                                    textAlign: message.senderId === userStore.user?.id ? "right" : "left",
+                                    textAlign: message.senderId === userId ? "right" : "left",
                                     borderRadius: "10px",
                                     padding: "10px",
                                     wordWrap: "break-word",
                                 }}
                             >
-                                {/* Komponent do renderowania wiadomości */}
                                 <GroupChatMessage message={message} userId={message.senderId} />
                             </Box>
                         </Box>
@@ -101,6 +101,7 @@ export default observer(function GroupChatProfile() {
                 ) : (
                     <Box sx={{ textAlign: "center", color: "gray" }}>No messages</Box>
                 )}
+                <div ref={messagesEndRef} />
             </Box>
 
             <Box sx={{ m: "10px" }}>

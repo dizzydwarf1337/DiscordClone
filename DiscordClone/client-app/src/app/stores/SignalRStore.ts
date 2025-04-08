@@ -178,7 +178,7 @@ export default class SignalRStore {
         });
     };
     handleReceiveGroupMessage = (message: GroupMessage) => {
-        const key = [message.senderId!, message.groupId].sort().join('-');
+        const key = message.groupId;
         runInAction(() => {
             console.log("messege received");
             const currentMessages = this.groupMessages.get(key) || [];

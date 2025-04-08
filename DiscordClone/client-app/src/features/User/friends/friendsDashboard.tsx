@@ -68,7 +68,7 @@ export default observer(function ChannelDashboard() {
     const handleLeaveGroup = async () => {
         if (selectedGroup && userStore.user) {
             try {
-                await friendStore.leaveFromGroup(userStore.user.id, selectedGroup.id);
+                await friendStore.leaveFromGroup(selectedGroup.id, userStore.user.id);
                 const groups = await friendStore.getFriendGroupsByUserId(userStore.user.id);
                 friendStore.setFriendGroups(groups || []);
             } catch (error) {
