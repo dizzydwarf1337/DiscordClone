@@ -76,6 +76,12 @@ namespace DiscordClone.Controllers
             
             return HandleResult(result);
         }
+        [HttpPost("friendsGroup/update/name")]
+        public async Task<IActionResult> UpdateGroupName(UpdateGroupNameDto updateGroupDto)
+        {
+            return HandleResult(await _friendshipService.UpdateGroupName(updateGroupDto));
+        }
+
         [HttpGet("friendsGroup/members/{groupId}")]
         public async Task<IActionResult> GetGroupMembers(Guid groupId)
         {

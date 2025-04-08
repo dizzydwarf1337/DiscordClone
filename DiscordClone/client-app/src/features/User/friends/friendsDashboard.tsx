@@ -23,8 +23,18 @@ export default observer(function ChannelDashboard() {
     }
     const closeDialog = () => setIsDialogOpen(false);
 
-    const handleSaveGroup = () => {
-        //setGroup(updatedGroup);
+    const handleRefreshGroups = async () => {
+        try {
+            const groups = await friendStore.getFriendGroupsByUserId(userStore.user!.id);
+            friendStore.setFriendGroups(groups || []);
+            
+            const friends = await friendStore.GetUserFriendsById(userStore.user!.id);
+            friendStore.setFriends(friends || []);
+            
+            console.log("Groups and friends refreshed");
+        } catch (error) {
+            console.error("Failed to refresh groups and friends:", error);
+        }
     };
 
     useEffect(() => {
@@ -85,7 +95,7 @@ export default observer(function ChannelDashboard() {
         isOpen={isDialogOpen && selectedGroup !== null}
         group={selectedGroup ?? { id: '', name: '', isOwner: false, members: [] }}
         onClose={closeDialog}
-        onSave={handleSaveGroup}
+        onSave={handleRefreshGroups}
         />
             {/* Left sidebar for friends */}
             <Box
@@ -100,7 +110,7 @@ export default observer(function ChannelDashboard() {
                     flexShrink: 0,
                 }}
             >
-                <Typography variant="h6">Friends groups</Typography>
+                <Typography variant="h6">Friend groups</Typography>
                 <Divider sx={{ width: '80%', borderColor: 'gray', my: 1 }} />
                 {friendStore.friendGroups?.length > 0 ? (
                     friendStore.friendGroups.map((group) => (
