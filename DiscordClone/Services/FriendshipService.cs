@@ -281,6 +281,36 @@ public class FriendshipService
         _logger.LogInformation("User: {UserId} added to group: {GroupId}", userId, groupId);
         return Result<bool>.Success(true);
     }
+
+    public async Task<Result<bool>> UpdateGroupName(UpdateGroupNameDto updateGroupDto)
+    {
+        try
+        {
+            // Retrieve the group from the database by its GroupId
+            var group = await _context.FriendGroups
+                .FirstOrDefaultAsync(g => g.Id == updateGroupDto.GroupId);
+
+            if (group == null)
+            {
+                return Result<bool>.Failure("Group not found.");
+            }
+
+            // Update the group's name
+            group.Name = updateGroupDto.GroupName;
+
+            // Save the changes to the database
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Group name updated successfully for group: {GroupId}", updateGroupDto.GroupId);
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating group name for group: {GroupId}", updateGroupDto.GroupId);
+            return Result<bool>.Failure("An error occurred while updating the group name.");
+        }
+    }
     public async Task<Result<string>> RemoveGroupAsync(Guid groupId)
     {
         _logger.LogInformation("Removing group: {GroupId}", groupId);

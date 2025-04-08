@@ -15,6 +15,7 @@ import FriendsUsernameRequest from '../Models/FriendsUsernameRequest';
 import PrivateMessage from '../Models/PrivateMessage';
 import { CreateGroupDto } from '../Models/CreateGroupDto';
 import GroupMessage from '../Models/GroupMessage';
+import { UpdateGroupNameDto } from '../Models/UpdateGroupDto';
 
 
 axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -99,6 +100,7 @@ const Friends = {
     RemoveFriendGroup: (groupId: string, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/remove/${groupId}`, noAuth),
     LeaveFriendGroup: (groupId: string, userId: string, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/leave/${groupId}/${userId}`, noAuth),
     GetGroupMembers: (groupId: string, noAuth = false) => requests.get<ApiResponseModel>(`friendship/friendsgroup/members/${groupId}`, noAuth),
+    UpdateGroupName: (updateGroupName: UpdateGroupNameDto, noAuth = false) => requests.post<ApiResponseModel>(`friendship/friendsgroup/update/name`,updateGroupName, noAuth),
 }
 const agent = {
     Auth,

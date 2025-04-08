@@ -30,7 +30,7 @@ export default observer(function GroupChatProfile() {
                     page
                 );
 
-                await signalRStore.joinGroup(groupId); // Dołączenie do grupy SignalR
+                await signalRStore.joinGroup(groupId);
 
                 runInAction(() => {
                     signalRStore.groupMessages.set(key, newMessages);

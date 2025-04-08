@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { User } from '../../../app/Models/user';
 import agent from '../../../app/API/agent';
 import { useStore } from '../../../app/stores/store';
+import { UpdateGroupNameDto } from '../../../app/Models/UpdateGroupDto';
 
 interface Group {
   id: string;
@@ -27,7 +28,7 @@ interface GroupManagementDialogProps {
   isOpen: boolean;
   group: Group;
   onClose: () => void;
-  onSave: (group: Group) => void;
+  onSave: () => void;
 }
 
 export default function GroupManagementDialog({
@@ -36,7 +37,7 @@ export default function GroupManagementDialog({
   onClose,
   onSave
 }: GroupManagementDialogProps) {
-  const {friendStore} = useStore();
+  const { userStore, friendStore } = useStore();
   const [groupName, setGroupName] = useState<string>('');
   const [members, setMembers] = useState<User[]>([]);
   const [newMemberUsername, setNewMemberUsername] = useState<string>('');
@@ -45,13 +46,16 @@ export default function GroupManagementDialog({
     if (!isOpen) return;
 
     setGroupName(group.name);
-    setMembers(group.members || []);
 
     const loadGroupMembers = async () => {
       try {
         const loadedMembers = await friendStore.getGroupMembers(group.id);
         if (Array.isArray(loadedMembers)) {
-          setMembers(loadedMembers);
+          // Exclude the current user from the list of members
+          const filteredMembers = loadedMembers.filter(
+            (member) => member.id !== userStore.user?.id
+          );
+          setMembers(filteredMembers);
         }
       } catch (error) {
         console.error('Failed to load group members', error);
@@ -59,7 +63,7 @@ export default function GroupManagementDialog({
     };
 
     loadGroupMembers();
-  }, [isOpen, group]);
+  }, [isOpen, group, userStore.user?.id]);
 
   const handleAddMember = async () => {
     if (!newMemberUsername.trim()) return;
@@ -79,6 +83,7 @@ export default function GroupManagementDialog({
         alert('User is already in the group.');
         return;
       }
+
       await friendStore.addFriendToGroup(group.id, userToAdd.data.id);
       setMembers([...members, userToAdd.data]);
       setNewMemberUsername('');
@@ -89,24 +94,44 @@ export default function GroupManagementDialog({
   };
 
   const handleRemoveMember = async (member: User) => {
+    // Do not allow removing the current user
+    if (member.id === userStore.user?.id) {
+      alert("You can't remove yourself from the group.");
+      return;
+    }
+
     try {
-      console.log(group, member);
-      const response = await friendStore.leaveFromGroup(group.id, member.id)
+      const response = await friendStore.leaveFromGroup(group.id, member.id);
       console.log(response);
-    }
-    catch (error) {
-        console.log(error);
-    }
-    finally {
+    } catch (error) {
+      console.log(error);
+    } finally {
       setMembers(members.filter((m) => m.username !== member.username));
+    }
+  };
+
+  const handleChangeGroupName = async () => {
+    try {
+      if (!groupName.trim()) {
+        alert('Group name cannot be empty.');
+        return;
+      }
+      const updateGroupName: UpdateGroupNameDto = {
+        GroupId: group.id,
+        GroupName: groupName
+      };
+      await agent.Friends.UpdateGroupName(updateGroupName);
+
+      onSave();
+    } catch (error) {
+      console.error('Failed to update group name:', error);
+      alert('Failed to update group name. Please try again.');
     }
   };
 
   const handleSave = async () => {
     try {
-      await agent.Friends.UpdateGroup(group.id, groupName);
-
-      onSave({ ...group, name: groupName, members });
+      onSave();
       onClose();
     } catch (error) {
       console.error('Failed to save group:', error);
@@ -118,32 +143,45 @@ export default function GroupManagementDialog({
     <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Manage Group</DialogTitle>
       <DialogContent>
-        <TextField
-          label="Group Name"
-          variant="outlined"
-          fullWidth
-          value={groupName}
-          onChange={(e) => setGroupName(e.target.value)}
-          margin="normal"
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', marginTop: '8px' }}>
+          <TextField
+            label="Group Name"
+            variant="outlined"
+            fullWidth
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            margin="normal"
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleChangeGroupName}
+            size="small"
+            style={{ marginTop: '8px' }}
+          >
+            Save
+          </Button>
+        </div>
 
-        <TextField
-          label="Add New Member (username)"
-          variant="outlined"
-          fullWidth
-          value={newMemberUsername}
-          onChange={(e) => setNewMemberUsername(e.target.value)}
-          margin="normal"
-        />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleAddMember}
-          fullWidth
-          style={{ marginBottom: '16px' }}
-        >
-          Add Member
-        </Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <TextField
+            label="Add New Member (username)"
+            variant="outlined"
+            fullWidth
+            value={newMemberUsername}
+            onChange={(e) => setNewMemberUsername(e.target.value)}
+            margin="normal"
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleAddMember}
+            size="small"
+            style={{ marginTop: '8px' }}
+          >
+            Add
+          </Button>
+        </div>
 
         <List>
           {members.map((member, index) => (
@@ -164,12 +202,10 @@ export default function GroupManagementDialog({
           ))}
         </List>
       </DialogContent>
+
       <DialogActions>
-        <Button onClick={onClose} color="primary">
-          Cancel
-        </Button>
         <Button onClick={handleSave} color="primary" variant="contained">
-          Save
+          Close
         </Button>
       </DialogActions>
     </Dialog>
