@@ -7,6 +7,7 @@ import { runInAction } from "mobx";
 import GroupChatMessage from "./groupChatMessage";
 import GroupChatMessageTextField from "./groupChatMessageTextField";
 import agent from "../../../app/API/agent";
+import GroupMembers from "./groupMembers";
 
 export default observer(function GroupChatProfile() {
     const { userStore, signalRStore } = useStore();
@@ -14,6 +15,7 @@ export default observer(function GroupChatProfile() {
     const [page, setPage] = useState<number>(1);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const [sideBarOpen, setSideBarOpen] = useState<boolean>(false);
 
     const userId = userStore.user?.id;
     const key = groupId!;
@@ -55,6 +57,7 @@ export default observer(function GroupChatProfile() {
     }, [filteredMessages.length]);
 
     return (
+        <>
         <Box display="flex" flexDirection="column" height="90vh" width="100%" sx={{ overflow: "hidden" }}>
             <Box sx={{ m: "10px" }}>
                 <TextField
@@ -108,5 +111,14 @@ export default observer(function GroupChatProfile() {
                 <GroupChatMessageTextField />
             </Box>
         </Box>
+        {groupId && (
+            <GroupMembers
+            key={groupId}
+            isOpen={sideBarOpen}
+            setIsOpen={setSideBarOpen}
+            groupId={groupId}
+        />
+        )}
+        </>
     );
 });
