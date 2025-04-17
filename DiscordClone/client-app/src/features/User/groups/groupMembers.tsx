@@ -18,20 +18,23 @@ export default observer(function GroupMembers({ isOpen, setIsOpen, groupId }: Pr
 
     useEffect(() => {
         const fetchGroupMembers = async () => {
-            if (isOpen && members.length === 0) {
-                try {
-                    const response = await friendStore.getGroupMembers(groupId);
-                    if (Array.isArray(response)) {
-                        setMembers(response);
-                    }
-                } catch (error) {
-                    console.error('Error fetching group members:', error);
+            if (!isOpen) return;
+    
+            try {
+                setMembers([]);
+                const response = await friendStore.getGroupMembers(groupId);
+                if (Array.isArray(response)) {
+                    setMembers(response);
                 }
+            } catch (error) {
+                console.error('Error fetching group members:', error);
+                setMembers([]);
             }
         };
     
         fetchGroupMembers();
-    }, [isOpen, friendStore, groupId, members.length]);
+    }, [isOpen, friendStore, groupId]);
+    
 
     return (
         <>
@@ -55,6 +58,8 @@ export default observer(function GroupMembers({ isOpen, setIsOpen, groupId }: Pr
                     </Box>
                 )}
 
+        {isOpen && (
+            <>
                 {members.length === 0 ? (
                     <Typography>No members available</Typography>
                 ) : (
@@ -79,10 +84,12 @@ export default observer(function GroupMembers({ isOpen, setIsOpen, groupId }: Pr
                                 }}
                                 src={member.image || "/public/user.png"}
                             />
-                            {isOpen ? <Typography>{member.username || 'Unnamed'}</Typography> : <></>}
+                            <Typography>{member.username || 'Unnamed'}</Typography>
                         </Box>
                     ))
                 )}
+            </>
+        )}
             </Box>
         </>
     );

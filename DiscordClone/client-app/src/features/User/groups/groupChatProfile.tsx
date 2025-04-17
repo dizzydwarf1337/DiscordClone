@@ -113,10 +113,11 @@ export default observer(function GroupChatProfile() {
         </Box>
         {groupId && (
             <GroupMembers
-                isOpen={sideBarOpen}
-                setIsOpen={setSideBarOpen}
-                groupId={groupId}
-            />
+            key={groupId}
+            isOpen={sideBarOpen}
+            setIsOpen={setSideBarOpen}
+            groupId={groupId}
+        />
         )}
         </>
     );
