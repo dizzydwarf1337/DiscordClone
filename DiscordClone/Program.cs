@@ -25,6 +25,7 @@ builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>(
 builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>();
 builder.Services.AddScoped<ServerOperationsService>();
 builder.Services.AddScoped<MessageService>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<ChatHub>();
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => options.SignIn.RequireConfirmedAccount = false)
         .AddEntityFrameworkStores<ApplicationContext>()

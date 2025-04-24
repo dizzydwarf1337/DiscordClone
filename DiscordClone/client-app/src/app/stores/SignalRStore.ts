@@ -4,6 +4,7 @@ import Message from "../Models/message";
 import agent from "../API/agent";
 import PrivateMessage from "../Models/PrivateMessage";
 import GroupMessage from "../Models/GroupMessage";
+import { NotificationDto } from "../Models/NotificationDto";
 
 export default class SignalRStore {
     connection: HubConnection | null = null;
@@ -44,6 +45,7 @@ export default class SignalRStore {
                 this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
                 this.connection.on("ReceiveMessage", this.handleReceiveMessage);
                 this.connection.on("ReceiveGroupMessage", this.handleReceiveGroupMessage);
+                this.connection.on("ReceiveNotification", this.handleReceiveNotification);
 
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const userId = user.id;
@@ -159,6 +161,19 @@ export default class SignalRStore {
             } catch (error) {
                 console.error(`Failed to connect to group: ${groupName}`, error);
             }
+        }
+    };
+
+    
+    handleReceiveNotification = (notification: NotificationDto) => {
+        console.log("🔔 Notification received:", notification);
+        switch (notification.type) {
+            case "NewPrivateMessage":
+                console.log("New private message notification:", notification);
+                break;
+            case "NewGroupMessage":
+                console.log("New group message notification:", notification);
+                break;
         }
     };
 
