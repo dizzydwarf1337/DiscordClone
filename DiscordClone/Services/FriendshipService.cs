@@ -346,7 +346,7 @@ public class FriendshipService
                 return Result<string>.Failure("Group not found.");
             }
 
-  
+            var membersId = group.Members.Select(m => m.Id).ToList();
             group.Members.Clear(); 
 
             _context.FriendGroups.Remove(group);
@@ -355,6 +355,19 @@ public class FriendshipService
             await transaction.CommitAsync();
 
             _logger.LogInformation("Group: {GroupId} removed successfully", groupId);
+
+            var notification = new NotificationDto
+            {
+                ReceiversId = membersId,
+                Type = "KickedFromGroup",
+                Payload = new
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name
+                }
+            };
+            await _notificattionService.SendNotification(notification);
+
             return Result<string>.Success("Group deleted successfully");
         }
         catch (Exception ex)

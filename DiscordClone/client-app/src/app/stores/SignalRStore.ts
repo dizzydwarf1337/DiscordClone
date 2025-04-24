@@ -201,7 +201,7 @@ export default class SignalRStore {
                 console.log("❌ You were kicked from the group:", notification.payload.groupId);
                 if (typeof notification.payload === 'object' && notification.payload !== null && 'groupId' in notification.payload) {
                     const groupId = notification.payload.groupId;        
-
+                    this.refreshFriendGroups();
                     if (window.location.pathname.includes(`/main/group/${groupId}`)) {
                         window.location.href = "/main";
                     }
