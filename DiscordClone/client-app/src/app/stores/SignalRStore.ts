@@ -4,6 +4,8 @@ import Message from "../Models/message";
 import agent from "../API/agent";
 import PrivateMessage from "../Models/PrivateMessage";
 import GroupMessage from "../Models/GroupMessage";
+import { NotificationDto } from "../Models/NotificationDto";
+import FriendStore  from "./friendStore";
 
 export default class SignalRStore {
     connection: HubConnection | null = null;
@@ -13,8 +15,10 @@ export default class SignalRStore {
     currentChannel: string = "";
     currentServer: string = "";
     isConnected: boolean = false;
-    constructor() {
+    friendStore: FriendStore;
+    constructor(friendStore: FriendStore) {
         makeAutoObservable(this);
+        this.friendStore = friendStore;
 
         if (localStorage.getItem('user') && !this.isConnected) {
             this.startConnection().then(() => {
@@ -44,6 +48,7 @@ export default class SignalRStore {
                 this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
                 this.connection.on("ReceiveMessage", this.handleReceiveMessage);
                 this.connection.on("ReceiveGroupMessage", this.handleReceiveGroupMessage);
+                this.connection.on("ReceiveNotification", this.handleReceiveNotification);
 
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const userId = user.id;
@@ -159,6 +164,49 @@ export default class SignalRStore {
             } catch (error) {
                 console.error(`Failed to connect to group: ${groupName}`, error);
             }
+        }
+    };
+
+    refreshFriendGroups = async () => {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user.id;
+
+        if (!userId) {
+            console.error("User ID not found in local storage");
+            return;
+        }
+
+        try {
+            const friendGroups = await this.friendStore.getFriendGroupsByUserId(userId);
+            runInAction(() => {
+            this.friendStore.setFriendGroups(friendGroups);
+            });
+            console.log("Friend store refreshed with new friend groups");
+        } catch (error) {
+            console.error("Error refreshing friend store:", error);
+        }
+    };
+
+    handleReceiveNotification = (notification: NotificationDto) => {
+        console.log("🔔 Notification received:", notification);
+        switch (notification.type) {
+            case "NewPrivateMessage":
+                console.log("New private message notification:", notification);
+                break;
+            case "AddedToGroup":
+                console.log("Added to group notification:", notification);
+                this.refreshFriendGroups();
+                break;
+            case "KickedFromGroup":
+                console.log("❌ You were kicked from the group:", notification.payload.groupId);
+                if (typeof notification.payload === 'object' && notification.payload !== null && 'groupId' in notification.payload) {
+                    const groupId = notification.payload.groupId;        
+
+                    if (window.location.pathname.includes(`/main/group/${groupId}`)) {
+                        window.location.href = "/main";
+                    }
+                }
+                break;
         }
     };
 

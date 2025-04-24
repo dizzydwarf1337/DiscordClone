@@ -41,6 +41,9 @@ export default class FriendStore {
     createFriendGroup = async (createGroup: CreateGroupDto) => {
             try {
             const response = await agent.Friends.CreateFriendGroup(createGroup);
+             this.getFriendGroupsByUserId(createGroup.CreatorId).then((groups) => {
+                 this.setFriendGroups(groups);
+             });
             return response; 
         }
         catch (error) {

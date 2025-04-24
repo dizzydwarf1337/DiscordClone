@@ -1,6 +1,7 @@
 ﻿using DiscordClone.Db;
 using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
+using DiscordClone.Services;
 using DiscordClone.Utils;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -9,10 +10,12 @@ public class FriendshipService
 {
     private readonly ApplicationContext _context;
     private readonly ILogger<FriendshipService> _logger;
-    public FriendshipService(ApplicationContext context, ILogger<FriendshipService> logger)
+    private readonly NotificationService _notificattionService;
+    public FriendshipService(ApplicationContext context, ILogger<FriendshipService> logger, NotificationService notificattionService)
     {
         _context = context;
         _logger = logger;
+        _notificattionService = notificattionService;
     }
 
     // Wysyłanie zaproszenia do przyjaźni
@@ -279,6 +282,20 @@ public class FriendshipService
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("User: {UserId} added to group: {GroupId}", userId, groupId);
+
+        var notification = new NotificationDto
+        {
+            ReceiversId = new List<Guid> { userId },
+            Type = "AddedToGroup",
+            Payload = new
+            {
+                GroupId = groupId,
+                GroupName = group.Name,
+                AddedBy = userId
+            }
+        };
+        await _notificattionService.SendNotification(notification);
+        
         return Result<bool>.Success(true);
     }
 
@@ -383,6 +400,18 @@ public class FriendshipService
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("User: {UserId} removed from group: {GroupId}", userId, groupId);
+            var notification = new NotificationDto
+            {
+                ReceiversId = new List<Guid> { userId },
+                Type = "KickedFromGroup",
+                Payload = new
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name,
+                    RemovedBy = userId
+                }
+            };
+            await _notificattionService.SendNotification(notification);
             return Result<bool>.Success(true);
         }
         catch (Exception ex)
