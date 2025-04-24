@@ -164,7 +164,6 @@ export default class SignalRStore {
         }
     };
 
-    
     handleReceiveNotification = (notification: NotificationDto) => {
         console.log("🔔 Notification received:", notification);
         switch (notification.type) {
