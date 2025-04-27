@@ -13,5 +13,6 @@
         public string SenderName { get; set; } = string.Empty;
 
         public List<ReactionDto> Reactions { get; set; } = new List<ReactionDto>();
+        public List<AttachmentDto> Attachments { get; set; } = new List<AttachmentDto>();
     }
 }

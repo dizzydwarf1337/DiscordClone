@@ -81,6 +81,15 @@ const Messages = {
     GetAllMessages: (channelId: string, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}`, noAuth),
     GetMessagesFromLastDays: (channelId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}/last/${days}`, noAuth),
     GetPrivateMessagesFromNDays: (user1: string, user2: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/private/${user1}/${user2}/${days}`, noAuth),
+    SendMessageWithAttachments: (formData: FormData, noAuth = false) =>
+        axios.post<ApiResponseModel>('MessageAttachments/send', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+                'NoAuth': noAuth
+            }
+        }).then(responseBody),
+    GetAttachments: (messageId: string, noAuth = false) =>
+        requests.get<ApiResponseModel>(`MessageAttachments/${messageId}/attachments`, noAuth),
 }
 const Friends = {
     SendFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/send', friendRequest, noAuth),

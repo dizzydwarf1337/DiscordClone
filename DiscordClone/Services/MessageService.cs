@@ -192,8 +192,9 @@ namespace DiscordClone.Services
         {
             var fromDate = DateTime.UtcNow.AddDays(-days);
             var messages = await _applicationContext.Messages
-                .Include(m => m.User)           // Include the User data (already present)
-                .Include(m => m.Reactions)      // Include the Reactions collection
+                .Include(m => m.User)
+                .Include(m => m.Reactions)
+                .Include(m => m.Attachments) // Include Attachments
                 .Where(m => m.ChannelId == channelId && m.CreatedAt >= fromDate)
                 .ToListAsync();
 
@@ -209,11 +210,18 @@ namespace DiscordClone.Services
                 CreatedAt = m.CreatedAt,
                 SenderId = m.UserId,
                 SenderName = m.User.UserName,
+                ChannelId = m.ChannelId,
                 Reactions = m.Reactions != null ? m.Reactions.Select(r => new ReactionDto
                 {
                     UserId = r.UserId,
                     ReactionType = r.ReactionType,
-                }).ToList() : new List<ReactionDto>() // Ensure to handle null Reactions
+                }).ToList() : new List<ReactionDto>(),
+                Attachments = m.Attachments != null ? m.Attachments.Select(a => new AttachmentDto
+                {
+                    AttachmentId = a.AttachmentId,
+                    AttachmentUrl = a.AttachmentUrl,
+                    AttachmentType = a.AttachmentType.ToString()
+                }).ToList() : new List<AttachmentDto>()
             }).OrderBy(x => x.CreatedAt).ToList();
 
             return Result<List<MessageDto>>.Success(messageDtos);

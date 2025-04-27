@@ -29,6 +29,8 @@ namespace DiscordClone.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+
         [HttpPost("reaction/add")]
         public async Task<IActionResult> AddReaction([FromBody] AddReactionDto addReactionDto)
         {

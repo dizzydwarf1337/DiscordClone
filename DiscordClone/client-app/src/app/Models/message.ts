@@ -6,4 +6,11 @@ export default interface Message {
     senderId: string;
     senderName: string;
     reaction: string;
+    attachments?: AttachmentDto[];
+}
+
+export interface AttachmentDto {
+    attachmentId: string;
+    attachmentUrl: string;
+    attachmentType: string;
 }
