@@ -36,6 +36,7 @@ export default observer(function GroupChatProfile() {
 
                 runInAction(() => {
                     signalRStore.groupMessages.set(key, newMessages);
+                    signalRStore.markMessagesAsRead('group', groupId);
                 });
             } catch (error) {
                 console.error("Failed to load messages:", error);

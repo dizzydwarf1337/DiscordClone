@@ -16,6 +16,8 @@ export default class SignalRStore {
     currentServer: string = "";
     isConnected: boolean = false;
     friendStore: FriendStore;
+    unreadPrivateMessages: Map<string, number> = new Map();
+    unreadGroupMessages: Map<string, number> = new Map();
     constructor(friendStore: FriendStore) {
         makeAutoObservable(this);
         this.friendStore = friendStore;
@@ -222,6 +224,11 @@ export default class SignalRStore {
             console.log("Message received");
             const currentMessages = this.privateMessages.get(key) || [];
             this.privateMessages.set(key, [...currentMessages, message]);
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            if (message.senderId !== user.id) {
+              const currentUnread = this.unreadPrivateMessages.get(key) || 0;
+              this.unreadPrivateMessages.set(key, currentUnread + 1);
+            }
             console.log("Private messages updated:", this.privateMessages);
         });
     };
@@ -231,8 +238,34 @@ export default class SignalRStore {
             console.log("messege received");
             const currentMessages = this.groupMessages.get(key) || [];
             this.groupMessages.set(key, [...currentMessages, message]);
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            if (message.senderId !== user.id) {
+              const currentUnread = this.unreadGroupMessages.get(key) || 0;
+              this.unreadGroupMessages.set(key, currentUnread + 1);
+            }
         });
     };
+
+    markMessagesAsRead = async (type: 'private' | 'group', id: string) => {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user.id;
+
+        try {
+          if (type === 'private') {
+         //   await agent.Messages.MarkPrivateMessagesAsRead(userId, id);
+            runInAction(() => {
+              this.unreadPrivateMessages.set(id, 0);
+            });
+          } else {
+          //  await agent.Messages.MarkGroupMessagesAsRead(userId, id);
+            runInAction(() => {
+              this.unreadGroupMessages.set(id, 0);
+            });
+          }
+        } catch (error) {
+          console.error(`Error marking ${type} messages as read:`, error);
+        }
+      };
     clearMessages = () => {
         this.messages.clear();
     };
