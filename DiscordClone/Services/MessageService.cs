@@ -394,8 +394,8 @@ namespace DiscordClone.Services
         {
             var fromDate = DateTime.UtcNow.AddDays(-days);
             var messages = await _applicationContext.GroupMessages
-                .Include(m => m.Sender)           // Include the User data (already present)
-                .Include(m => m.Reactions)      // Include the Reactions collection
+                .Include(m => m.Sender)          
+                .Include(m => m.Reactions)   
                 .Where(m => m.GroupId == groupId && m.SentAt >= fromDate)
                 .ToListAsync();
 

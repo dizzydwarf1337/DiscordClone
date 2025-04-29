@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace DiscordClone.Migrations
 {
     /// <inheritdoc />
-    public partial class ModelsInit : Migration
+    public partial class InitialCreate4 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -164,7 +165,7 @@ namespace DiscordClone.Migrations
                 columns: table => new
                 {
                     DirectMessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     IsRead = table.Column<bool>(type: "bit", nullable: false),
                     SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -185,6 +186,80 @@ namespace DiscordClone.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FriendGroups",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FriendGroups", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FriendGroups_AspNetUsers_CreatorId",
+                        column: x => x.CreatorId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Friendships",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ReceiverId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    AcceptedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Friendships", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Friendships_AspNetUsers_ReceiverId",
+                        column: x => x.ReceiverId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Friendships_AspNetUsers_SenderId",
+                        column: x => x.SenderId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PrivateMessages",
+                columns: table => new
+                {
+                    MessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ReceiverId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ReceivedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Read = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PrivateMessages", x => x.MessageId);
+                    table.ForeignKey(
+                        name: "FK_PrivateMessages_AspNetUsers_ReceiverId",
+                        column: x => x.ReceiverId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PrivateMessages_AspNetUsers_SenderId",
+                        column: x => x.SenderId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -231,14 +306,66 @@ namespace DiscordClone.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "FriendGroupUser",
+                columns: table => new
+                {
+                    FriendGroupId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FriendGroupUser", x => new { x.FriendGroupId, x.UserId });
+                    table.ForeignKey(
+                        name: "FK_FriendGroupUser_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_FriendGroupUser_FriendGroups_FriendGroupId",
+                        column: x => x.FriendGroupId,
+                        principalTable: "FriendGroups",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "GroupMessages",
+                columns: table => new
+                {
+                    MessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    GroupId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ReceivedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GroupMessages", x => x.MessageId);
+                    table.ForeignKey(
+                        name: "FK_GroupMessages_AspNetUsers_SenderId",
+                        column: x => x.SenderId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_GroupMessages_FriendGroups_GroupId",
+                        column: x => x.GroupId,
+                        principalTable: "FriendGroups",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Channels",
                 columns: table => new
                 {
                     ChannelId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ChannelType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ChannelType = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Topic = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Topic = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: true),
                     ServerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
@@ -276,8 +403,7 @@ namespace DiscordClone.Migrations
                         name: "FK_Invites_Servers_ServerId",
                         column: x => x.ServerId,
                         principalTable: "Servers",
-                        principalColumn: "ServerId",
-                        onDelete: ReferentialAction.NoAction);
+                        principalColumn: "ServerId");
                 });
 
             migrationBuilder.CreateTable(
@@ -288,23 +414,28 @@ namespace DiscordClone.Migrations
                     BannedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Reason = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ServerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    BanningUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BannedUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ServerBans", x => x.BanId);
                     table.ForeignKey(
-                        name: "FK_ServerBans_AspNetUsers_UserId",
-                        column: x => x.UserId,
+                        name: "FK_ServerBans_AspNetUsers_BannedUserId",
+                        column: x => x.BannedUserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ServerBans_AspNetUsers_BanningUserId",
+                        column: x => x.BanningUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ServerBans_Servers_ServerId",
                         column: x => x.ServerId,
                         principalTable: "Servers",
                         principalColumn: "ServerId",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -330,8 +461,7 @@ namespace DiscordClone.Migrations
                         name: "FK_ServerMembers_Servers_ServerId",
                         column: x => x.ServerId,
                         principalTable: "Servers",
-                        principalColumn: "ServerId",
-                        onDelete: ReferentialAction.NoAction);
+                        principalColumn: "ServerId");
                 });
 
             migrationBuilder.CreateTable(
@@ -357,11 +487,33 @@ namespace DiscordClone.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "GroupMessageReadBy",
+                columns: table => new
+                {
+                    GroupMessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_GroupMessageReadBy", x => new { x.GroupMessageId, x.UserId });
+                    table.ForeignKey(
+                        name: "FK_GroupMessageReadBy_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_GroupMessageReadBy_GroupMessages_GroupMessageId",
+                        column: x => x.GroupMessageId,
+                        principalTable: "GroupMessages",
+                        principalColumn: "MessageId");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Messages",
                 columns: table => new
                 {
                     MessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     IsEdited = table.Column<bool>(type: "bit", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -381,7 +533,7 @@ namespace DiscordClone.Migrations
                         column: x => x.ChannelId,
                         principalTable: "Channels",
                         principalColumn: "ChannelId",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -389,7 +541,7 @@ namespace DiscordClone.Migrations
                 columns: table => new
                 {
                     PollId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Question = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Question = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     ExpirationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ChannelId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
@@ -430,7 +582,7 @@ namespace DiscordClone.Migrations
                         column: x => x.ChannelId,
                         principalTable: "Channels",
                         principalColumn: "ChannelId",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -470,7 +622,8 @@ namespace DiscordClone.Migrations
                 {
                     UserRoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    RoleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ServerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -485,8 +638,12 @@ namespace DiscordClone.Migrations
                         name: "FK_UserServerRole_ServersRoles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "ServersRoles",
-                        principalColumn: "RoleId",
-                        onDelete: ReferentialAction.NoAction);
+                        principalColumn: "RoleId");
+                    table.ForeignKey(
+                        name: "FK_UserServerRole_Servers_ServerId",
+                        column: x => x.ServerId,
+                        principalTable: "Servers",
+                        principalColumn: "ServerId");
                 });
 
             migrationBuilder.CreateTable(
@@ -495,7 +652,7 @@ namespace DiscordClone.Migrations
                 {
                     AttachmentId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     AttachmentUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    AttachmentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AttachmentType = table.Column<int>(type: "int", nullable: false),
                     MessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
@@ -530,14 +687,48 @@ namespace DiscordClone.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PinnedMessages",
+                columns: table => new
+                {
+                    PinnedMessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ChannelId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PinnedById = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PinnedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PinnedMessages", x => x.PinnedMessageId);
+                    table.ForeignKey(
+                        name: "FK_PinnedMessages_AspNetUsers_PinnedById",
+                        column: x => x.PinnedById,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PinnedMessages_Channels_ChannelId",
+                        column: x => x.ChannelId,
+                        principalTable: "Channels",
+                        principalColumn: "ChannelId");
+                    table.ForeignKey(
+                        name: "FK_PinnedMessages_Messages_MessageId",
+                        column: x => x.MessageId,
+                        principalTable: "Messages",
+                        principalColumn: "MessageId");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Reactions",
                 columns: table => new
                 {
                     ReactionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ReactionType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ReactionType = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     MessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    GroupMessageMessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    PrivateMessageMessageId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UserId1 = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -546,14 +737,27 @@ namespace DiscordClone.Migrations
                         name: "FK_Reactions_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Reactions_AspNetUsers_UserId1",
+                        column: x => x.UserId1,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Reactions_GroupMessages_GroupMessageMessageId",
+                        column: x => x.GroupMessageMessageId,
+                        principalTable: "GroupMessages",
+                        principalColumn: "MessageId");
                     table.ForeignKey(
                         name: "FK_Reactions_Messages_MessageId",
                         column: x => x.MessageId,
                         principalTable: "Messages",
-                        principalColumn: "MessageId",
-                        onDelete: ReferentialAction.NoAction);
+                        principalColumn: "MessageId");
+                    table.ForeignKey(
+                        name: "FK_Reactions_PrivateMessages_PrivateMessageMessageId",
+                        column: x => x.PrivateMessageMessageId,
+                        principalTable: "PrivateMessages",
+                        principalColumn: "MessageId");
                 });
 
             migrationBuilder.CreateTable(
@@ -561,7 +765,7 @@ namespace DiscordClone.Migrations
                 columns: table => new
                 {
                     PollOptionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    OptionText = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OptionText = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     PollId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
@@ -571,8 +775,7 @@ namespace DiscordClone.Migrations
                         name: "FK_PollOptions_Polls_PollId",
                         column: x => x.PollId,
                         principalTable: "Polls",
-                        principalColumn: "PollId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "PollId");
                 });
 
             migrationBuilder.CreateTable(
@@ -591,20 +794,19 @@ namespace DiscordClone.Migrations
                         name: "FK_PollVotes_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_PollVotes_PollOptions_PollOptionId",
                         column: x => x.PollOptionId,
                         principalTable: "PollOptions",
                         principalColumn: "PollOptionId",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_PollVotes_Polls_PollId",
                         column: x => x.PollId,
                         principalTable: "Polls",
                         principalColumn: "PollId",
-                        onDelete: ReferentialAction.NoAction);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
@@ -682,6 +884,41 @@ namespace DiscordClone.Migrations
                 column: "SenderId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_FriendGroups_CreatorId",
+                table: "FriendGroups",
+                column: "CreatorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FriendGroupUser_UserId",
+                table: "FriendGroupUser",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Friendships_ReceiverId",
+                table: "Friendships",
+                column: "ReceiverId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Friendships_SenderId",
+                table: "Friendships",
+                column: "SenderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GroupMessageReadBy_UserId",
+                table: "GroupMessageReadBy",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GroupMessages_GroupId",
+                table: "GroupMessages",
+                column: "GroupId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_GroupMessages_SenderId",
+                table: "GroupMessages",
+                column: "SenderId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Invites_InviterId",
                 table: "Invites",
                 column: "InviterId");
@@ -707,6 +944,22 @@ namespace DiscordClone.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PinnedMessages_ChannelId",
+                table: "PinnedMessages",
+                column: "ChannelId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PinnedMessages_MessageId_ChannelId",
+                table: "PinnedMessages",
+                columns: new[] { "MessageId", "ChannelId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PinnedMessages_PinnedById",
+                table: "PinnedMessages",
+                column: "PinnedById");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PollOptions_PollId",
                 table: "PollOptions",
                 column: "PollId");
@@ -717,9 +970,10 @@ namespace DiscordClone.Migrations
                 column: "ChannelId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PollVotes_PollId",
+                name: "IX_PollVotes_PollId_UserId",
                 table: "PollVotes",
-                column: "PollId");
+                columns: new[] { "PollId", "UserId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PollVotes_PollOptionId",
@@ -732,9 +986,29 @@ namespace DiscordClone.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PrivateMessages_ReceiverId",
+                table: "PrivateMessages",
+                column: "ReceiverId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PrivateMessages_SenderId",
+                table: "PrivateMessages",
+                column: "SenderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reactions_GroupMessageMessageId",
+                table: "Reactions",
+                column: "GroupMessageMessageId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Reactions_MessageId",
                 table: "Reactions",
                 column: "MessageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reactions_PrivateMessageMessageId",
+                table: "Reactions",
+                column: "PrivateMessageMessageId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Reactions_UserId",
@@ -742,14 +1016,24 @@ namespace DiscordClone.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Reactions_UserId1",
+                table: "Reactions",
+                column: "UserId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServerBans_BannedUserId",
+                table: "ServerBans",
+                column: "BannedUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ServerBans_BanningUserId",
+                table: "ServerBans",
+                column: "BanningUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ServerBans_ServerId",
                 table: "ServerBans",
                 column: "ServerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ServerBans_UserId",
-                table: "ServerBans",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ServerMembers_ServerId",
@@ -782,9 +1066,16 @@ namespace DiscordClone.Migrations
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserServerRole_UserId",
+                name: "IX_UserServerRole_ServerId",
                 table: "UserServerRole",
-                column: "UserId");
+                column: "ServerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserServerRole_UserId_RoleId_ServerId",
+                table: "UserServerRole",
+                columns: new[] { "UserId", "RoleId", "ServerId" },
+                unique: true,
+                filter: "[ServerId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_VoiceSessions_ChannelId",
@@ -825,10 +1116,22 @@ namespace DiscordClone.Migrations
                 name: "DirectMessages");
 
             migrationBuilder.DropTable(
+                name: "FriendGroupUser");
+
+            migrationBuilder.DropTable(
+                name: "Friendships");
+
+            migrationBuilder.DropTable(
+                name: "GroupMessageReadBy");
+
+            migrationBuilder.DropTable(
                 name: "Invites");
 
             migrationBuilder.DropTable(
                 name: "messageEditHistories");
+
+            migrationBuilder.DropTable(
+                name: "PinnedMessages");
 
             migrationBuilder.DropTable(
                 name: "PollVotes");
@@ -858,13 +1161,22 @@ namespace DiscordClone.Migrations
                 name: "PollOptions");
 
             migrationBuilder.DropTable(
+                name: "GroupMessages");
+
+            migrationBuilder.DropTable(
                 name: "Messages");
+
+            migrationBuilder.DropTable(
+                name: "PrivateMessages");
 
             migrationBuilder.DropTable(
                 name: "ServersRoles");
 
             migrationBuilder.DropTable(
                 name: "Polls");
+
+            migrationBuilder.DropTable(
+                name: "FriendGroups");
 
             migrationBuilder.DropTable(
                 name: "Channels");
