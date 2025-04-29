@@ -49,7 +49,6 @@ export default observer(function ChannelDashboard() {
         loadFriends();
     }, [friendStore, userStore]);
 
-    // Mark messages as read when navigating to a friend's chat
     useEffect(() => {
         if (friendId) {
             const key = [userStore.user?.id, friendId].sort().join("-");
@@ -57,7 +56,6 @@ export default observer(function ChannelDashboard() {
         }
     }, [friendId, userStore.user?.id, signalRStore]);
 
-    // Mark messages as read when navigating to a group chat
     useEffect(() => {
         if (groupId) {
             signalRStore.markMessagesAsRead('group', groupId);

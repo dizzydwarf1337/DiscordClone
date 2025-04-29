@@ -235,13 +235,17 @@ export default class SignalRStore {
     handleReceiveGroupMessage = (message: GroupMessage) => {
         const key = message.groupId;
         runInAction(() => {
-            console.log("messege received");
+            console.log("message received");
             const currentMessages = this.groupMessages.get(key) || [];
             this.groupMessages.set(key, [...currentMessages, message]);
+            
+            // Sprawdź, czy użytkownik jest aktualnie na stronie tej grupy
+            const isUserOnGroupPage = window.location.pathname.includes(`/main/group/${key}`);
+            
             const user = JSON.parse(localStorage.getItem("user") || "{}");
-            if (message.senderId !== user.id) {
-              const currentUnread = this.unreadGroupMessages.get(key) || 0;
-              this.unreadGroupMessages.set(key, currentUnread + 1);
+            if (message.senderId !== user.id && !isUserOnGroupPage) {
+                const currentUnread = this.unreadGroupMessages.get(key) || 0;
+                this.unreadGroupMessages.set(key, currentUnread + 1);
             }
         });
     };
