@@ -159,8 +159,7 @@ namespace DiscordClone.Services
         public async Task MarkGroupMessagesAsReadAsync(Guid userId, Guid groupId)
         {
             var unreadMessages = await _applicationContext.GroupMessages
-                .Where(m => m.GroupId == groupId && 
-                    (m.ReadBy == null || !m.ReadBy.Any(u => u.Id == userId)))
+                .Where(m => m.GroupId == groupId && !m.ReadBy.Any(u => u.Id == userId))
                 .Include(m => m.ReadBy)
                 .ToListAsync();
 
