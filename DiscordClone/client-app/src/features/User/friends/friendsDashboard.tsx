@@ -40,14 +40,20 @@ export default observer(function ChannelDashboard() {
     };
 
     useEffect(() => {
-        const loadFriends = async () => {
-            friendStore.setFriends(await friendStore.GetUserFriendsById(userStore.user!.id));
+        const loadInitialData = async () => {
+            await friendStore.setFriends(await friendStore.GetUserFriendsById(userStore.user!.id));
             const groups = await friendStore.getFriendGroupsByUserId(userStore.user!.id);
-            console.log("Friend groups fetched:", groups);
             friendStore.setFriendGroups(groups || []);
+            
+            if (signalRStore.connection) {
+                groups?.forEach((group: { id: string; }) => {
+                    signalRStore.joinGroup(group.id);
+                });
+            }
         };
-        loadFriends();
-    }, [friendStore, userStore]);
+        
+        loadInitialData();
+    }, [friendStore, userStore, signalRStore]);
 
     useEffect(() => {
         if (friendId) {

@@ -4,6 +4,7 @@ using DiscordClone.Hubs;
 using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
 using DiscordClone.Utils;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiscordClone.Services
@@ -13,12 +14,15 @@ namespace DiscordClone.Services
         private readonly ApplicationContext _applicationContext;
         private readonly ChatHub _chatHub;
         private readonly ILogger<MessageService> _logger;
+        private readonly NotificationService _notificationService;
 
-        public MessageService(ApplicationContext applicationContext, ChatHub chatHub, ILogger<MessageService> logger)
+        public MessageService(ApplicationContext applicationContext, ChatHub chatHub, ILogger<MessageService> logger,
+         NotificationService notificationService)
         {
             _applicationContext = applicationContext;
             _chatHub = chatHub;
             _logger = logger;
+            _notificationService = notificationService;
         }
 
         public async Task SendMessageAsync(MessageDto messageDto)
@@ -43,21 +47,68 @@ namespace DiscordClone.Services
         public async Task SendPrivateMessage(PrivateMessageDto messageDto)
         {
             var sender = await _applicationContext.Users.FindAsync(messageDto.SenderId)
-                         ?? throw new Exception("Sender not found");
+                 ?? throw new Exception("Sender not found");
             var receiver = await _applicationContext.Users.FindAsync(messageDto.ReceiverId)
-                           ?? throw new Exception("Receiver not found");
+                   ?? throw new Exception("Receiver not found");
 
             var message = new PrivateMessage
             {
-                SenderId = messageDto.SenderId,
-                ReceiverId = messageDto.ReceiverId,
-                SentAt = DateTime.UtcNow,
-                Content = messageDto.Content,
+            SenderId = messageDto.SenderId,
+            ReceiverId = messageDto.ReceiverId,
+            SentAt = DateTime.UtcNow,
+            Content = messageDto.Content,
             };
             await _applicationContext.PrivateMessages.AddAsync(message);
             await _applicationContext.SaveChangesAsync();
+            var notification = new NotificationDto
+            {
+            ReceiversId = new List<Guid> { messageDto.ReceiverId },
+            Type = "NewPrivateMessage",
+            Payload = new
+            {
+                messageDto,
+            }
+            };
+            await _notificationService.SendNotification(notification);
             await _chatHub.SendPrivateMessage(messageDto);
         }
+        public async Task<Result<List<UnreadPrivateMessageCountDto>>> GetUnreadPrivateMessageCountsAsync(Guid userId)
+        {
+            var unreadCounts = await _applicationContext.PrivateMessages
+                .Where(m => m.ReceiverId == userId && !m.Read)
+                .GroupBy(m => m.SenderId)
+                .Select(g => new UnreadPrivateMessageCountDto 
+                { 
+                    FriendId = g.Key, 
+                    Count = g.Count() 
+                })
+                .ToListAsync();
+
+            return Result<List<UnreadPrivateMessageCountDto>>.Success(unreadCounts);
+        }
+
+        public async Task<Result<List<UnreadGroupMessageCountDto>>> GetUnreadGroupMessageCountsAsync(Guid userId)
+        {
+            var userGroupIds = await _applicationContext.FriendGroups
+                .Where(g => g.Members.Any(m => m.Id == userId))
+                .Select(g => g.Id)
+                .ToListAsync();
+
+            var unreadCounts = await _applicationContext.GroupMessages
+                .Where(m => userGroupIds.Contains(m.GroupId))
+                .Where(m => m.ReadBy == null || !m.ReadBy.Any(r => r.Id == userId))
+                .GroupBy(m => m.GroupId)
+                .Select(g => new UnreadGroupMessageCountDto
+                {
+                    GroupId = g.Key,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            return Result<List<UnreadGroupMessageCountDto>>.Success(unreadCounts);
+        }
+
+
         public async Task SendGroupMessage(GroupMessageDto messageDto)
         {
             var sender = await _applicationContext.Users.FindAsync(messageDto.SenderId)
@@ -74,6 +125,22 @@ namespace DiscordClone.Services
             };
             await _applicationContext.GroupMessages.AddAsync(message);
             await _applicationContext.SaveChangesAsync();
+            var groupMembers = await _applicationContext.FriendGroups
+                .Where(g => g.Id == messageDto.GroupId)
+                .SelectMany(g => g.Members.Select(u => u.Id))
+                .ToListAsync();
+
+            var notification = new NotificationDto
+            {
+                ReceiversId = groupMembers,
+                Type = "NewGroupMessage",
+                Payload = new
+                {
+                    messageDto,
+                }
+            };
+
+            await _notificationService.SendNotification(notification);
             await _chatHub.SendGroupMessage(messageDto);
         }
 

@@ -54,6 +54,7 @@ export default class SignalRStore {
 
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const userId = user.id;
+                await this.initializeUnreadCounts(userId);
                 try {
                     await this.connection.invoke("SetUserId", userId);
                 } catch (error) {
@@ -76,6 +77,28 @@ export default class SignalRStore {
             }
         }
     };
+
+    async initializeUnreadCounts(userId: string) {
+        try {
+            const privateUnreads = await agent.Messages.GetUnreadPrivateMessageCounts(userId);
+            console.log("Private unreads:", privateUnreads);
+            runInAction(() => {
+                privateUnreads.forEach(({key, count}: { key: string; count: number }) => {
+                    this.unreadPrivateMessages.set(key, count);
+                });
+            });
+    
+            const groupUnreads = await agent.Messages.GetUnreadGroupMessageCounts(userId);
+            console.log("Group unreads:", groupUnreads);
+            runInAction(() => {
+                groupUnreads.forEach(({groupId, count}: { groupId: string; count: number }) => {
+                    this.unreadGroupMessages.set(groupId, count);
+                });
+            });
+        } catch (error) {
+            console.error("Error initializing unread counts:", error);
+        }
+    }
 
     stopConnection = async () => {
         try {
@@ -193,7 +216,21 @@ export default class SignalRStore {
         console.log("🔔 Notification received:", notification);
         switch (notification.type) {
             case "NewPrivateMessage":
-                console.log("New private message notification:", notification);
+                const privateMsg = notification.payload.messageDto;
+                const key = [privateMsg.senderId, privateMsg.receiverId].sort().join("-");
+                runInAction(() => {
+                    const currentUnread = this.unreadPrivateMessages.get(key) || 0;
+                    this.unreadPrivateMessages.set(key, currentUnread + 1);
+                });
+                break;
+                
+            case "NewGroupMessage":
+                const groupMsg = notification.payload.messageDto;
+                const groupId = groupMsg.groupId;
+                runInAction(() => {
+                    const currentUnread = this.unreadGroupMessages.get(groupId) || 0;
+                    this.unreadGroupMessages.set(groupId, currentUnread + 1);
+                });
                 break;
             case "AddedToGroup":
                 console.log("Added to group notification:", notification);
@@ -224,11 +261,6 @@ export default class SignalRStore {
             console.log("Message received");
             const currentMessages = this.privateMessages.get(key) || [];
             this.privateMessages.set(key, [...currentMessages, message]);
-            const user = JSON.parse(localStorage.getItem("user") || "{}");
-            if (message.senderId !== user.id) {
-              const currentUnread = this.unreadPrivateMessages.get(key) || 0;
-              this.unreadPrivateMessages.set(key, currentUnread + 1);
-            }
             console.log("Private messages updated:", this.privateMessages);
         });
     };
@@ -238,15 +270,6 @@ export default class SignalRStore {
             console.log("message received");
             const currentMessages = this.groupMessages.get(key) || [];
             this.groupMessages.set(key, [...currentMessages, message]);
-            
-            // Sprawdź, czy użytkownik jest aktualnie na stronie tej grupy
-            const isUserOnGroupPage = window.location.pathname.includes(`/main/group/${key}`);
-            
-            const user = JSON.parse(localStorage.getItem("user") || "{}");
-            if (message.senderId !== user.id && !isUserOnGroupPage) {
-                const currentUnread = this.unreadGroupMessages.get(key) || 0;
-                this.unreadGroupMessages.set(key, currentUnread + 1);
-            }
         });
     };
 

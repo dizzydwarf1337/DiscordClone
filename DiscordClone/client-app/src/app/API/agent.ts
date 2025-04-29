@@ -86,7 +86,8 @@ const Messages = {
     GetGroupMessagesFromLastDays: (userId: string, groupId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/group/${userId}/${groupId}/${days}`, noAuth),
     GetMessagesFromLastDays: (channelId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}/last/${days}`, noAuth),
     GetPrivateMessagesFromNDays: (user1: string, user2: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/private/${user1}/${user2}/${days}`, noAuth),
-    
+    GetUnreadPrivateMessageCounts: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`message/private/unread/count/${userId}`, noAuth),
+    GetUnreadGroupMessageCounts: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`message/group/unread/count/${userId}`, noAuth),
 }
 const Friends = {
     SendFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/send', friendRequest, noAuth),

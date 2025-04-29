@@ -114,7 +114,23 @@ namespace DiscordClone.Controllers
         {
             return HandleResult(await _messageService.GetPrivateMessagesFromLastNDays(user1, user2,n));
         }
+        [HttpGet("private/unread/count/{userId}")]
+        public async Task<IActionResult> GetUnreadPrivateMessageCounts(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return BadRequest("Invalid user ID");
+            
+            return HandleResult(await _messageService.GetUnreadPrivateMessageCountsAsync(userId));
+        }
 
+        [HttpGet("group/unread/count/{userId}")]
+        public async Task<IActionResult> GetUnreadGroupMessageCounts(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                return BadRequest("Invalid user ID");
+                
+            return HandleResult(await _messageService.GetUnreadGroupMessageCountsAsync(userId));
+        }
         [HttpGet("group/{userId}/{groupId}/{n}")]
         public async Task<IActionResult> GetGroupMessagesFromNDays(Guid userId, Guid groupId, int n)
         {
