@@ -1,8 +1,8 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
 import { useStore } from "../../../app/stores/store";
-import { Box, Typography, Divider, IconButton, Menu, MenuItem, ListItemIcon } from "@mui/material";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Box, Typography, Divider, IconButton, Menu, MenuItem, ListItemIcon, Badge } from "@mui/material";
+import { Outlet, useNavigate, useParams } from "react-router-dom";
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -11,12 +11,14 @@ import GroupManagementDialog from "../groups/groupManagmentDialog";
 import { User } from "../../../app/Models/user";
 
 export default observer(function ChannelDashboard() {
-    const { userStore, friendStore } = useStore();
+    const { userStore, friendStore, signalRStore } = useStore();
     const navigate = useNavigate();
+    const { friendId, groupId } = useParams();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedGroup, setSelectedGroup] = useState<{ id: string, name: string, isOwner: boolean, members: User[] } | null>(null);
     const open = Boolean(anchorEl);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+    
     const handleOpenEditDialog = () => {
         setAnchorEl(null);
         setIsDialogOpen(true);
@@ -38,17 +40,46 @@ export default observer(function ChannelDashboard() {
     };
 
     useEffect(() => {
-        const loadFriends = async () => {
-            friendStore.setFriends(await friendStore.GetUserFriendsById(userStore.user!.id));
+        const loadInitialData = async () => {
+            await friendStore.setFriends(await friendStore.GetUserFriendsById(userStore.user!.id));
             const groups = await friendStore.getFriendGroupsByUserId(userStore.user!.id);
-            console.log("Friend groups fetched:", groups);
             friendStore.setFriendGroups(groups || []);
+            
+            if (signalRStore.connection) {
+                groups?.forEach((group: { id: string; }) => {
+                    signalRStore.joinGroup(group.id);
+                });
+            }
         };
-        loadFriends();
-    }, [friendStore, userStore]);
+        
+        loadInitialData();
+    }, []);
+
+    useEffect(() => {
+        const markMessagesAsRead = async () => {
+            if (friendId) {
+                const key = [userStore.user?.id, friendId].sort().join("-");
+                await signalRStore.markMessagesAsRead('private', key);
+            }
+        };
+        markMessagesAsRead();
+    }, [friendId, userStore.user?.id, signalRStore]);
+
+    useEffect(() => {
+        const markGroupMessagesAsRead = async () => {
+            if (groupId) {
+                await signalRStore.markMessagesAsRead('group', groupId);
+            }
+        };
+        markGroupMessagesAsRead();
+    }, [groupId, signalRStore]);
 
     const handleClick = (friendId: string) => {
         navigate('/main/friend/' + friendId);
+    };
+
+    const handleGroupClick = (groupId: string) => {
+        navigate('/main/group/' + groupId);
     };
 
     const handleGroupMenuClick = (event: React.MouseEvent<HTMLElement>, groupId: string, name: string, isOwner: boolean, members: User[]) => {
@@ -88,15 +119,25 @@ export default observer(function ChannelDashboard() {
         }
     };
 
+    const getUnreadFriendMessageCount = (friendId: string) => {
+        if (!userStore.user) return 0;
+        const key = [userStore.user.id, friendId].sort().join("-");
+        return signalRStore.unreadPrivateMessages.get(key) || 0;
+    };
+
+    const getUnreadGroupMessageCount = (groupId: string) => {
+        return signalRStore.unreadGroupMessages.get(groupId) || 0;
+    };
+
     return (
         <Box display="flex" flexDirection="row" height="91vh" width="96vw" sx={{ backgroundColor: "#4E4E4E" }}>
 
             <GroupManagementDialog
-        isOpen={isDialogOpen && selectedGroup !== null}
-        group={selectedGroup ?? { id: '', name: '', isOwner: false, members: [] }}
-        onClose={closeDialog}
-        onSave={handleRefreshGroups}
-        />
+                isOpen={isDialogOpen && selectedGroup !== null}
+                group={selectedGroup ?? { id: '', name: '', isOwner: false, members: [] }}
+                onClose={closeDialog}
+                onSave={handleRefreshGroups}
+            />
             {/* Left sidebar for friends */}
             <Box
                 display="flex"
@@ -131,9 +172,21 @@ export default observer(function ChannelDashboard() {
                                     cursor: "pointer"
                                 }
                             }}
-                            onClick={() => navigate(`/main/group/${group.id}`)}
+                            onClick={() => handleGroupClick(group.id)}
                         >
-                            <Typography variant="body1" color="white">{group.name}</Typography>
+                            <Badge 
+                                badgeContent={getUnreadGroupMessageCount(group.id)} 
+                                color="error"
+                                sx={{ 
+                                    '& .MuiBadge-badge': { 
+                                        fontSize: '0.7rem',
+                                        height: '18px',
+                                        minWidth: '18px'
+                                    } 
+                                }}
+                            >
+                                <Typography variant="body1" color="white">{group.name}</Typography>
+                            </Badge>
                             <IconButton
                                 size="small"
                                 onClick={(e) => handleGroupMenuClick(e, group.id, group.name, group.creatorId === userStore.user?.id, group.members)}
@@ -177,12 +230,24 @@ export default observer(function ChannelDashboard() {
                                     height="30px"
                                     sx={{
                                         borderRadius: "50%",
-                                        backgroundImage: friend.image ? `url(${friend.image})` : `url(/user.png)`,
+                                        backgroundImage: `url(${friend.image || '/user.png'})`,
                                         backgroundSize: "cover",
                                         backgroundPosition: "center",
                                     }}
                                 />
-                                <Typography ml="auto" mr="auto" variant="body1">{friend.username}</Typography>
+                                <Badge 
+                                    badgeContent={getUnreadFriendMessageCount(friend.id)} 
+                                    color="error"
+                                    sx={{ 
+                                        '& .MuiBadge-badge': { 
+                                            fontSize: '0.7rem',
+                                            height: '18px',
+                                            minWidth: '18px'
+                                        } 
+                                    }}
+                                >
+                                    <Typography ml="auto" mr="auto" variant="body1">{friend.username}</Typography>
+                                </Badge>
                             </Box>
                         </Box>
                     ))
@@ -267,4 +332,4 @@ export default observer(function ChannelDashboard() {
             </Box>
         </Box>
     );
-}); 
+});

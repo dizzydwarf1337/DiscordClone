@@ -16,6 +16,7 @@ import PrivateMessage from '../Models/PrivateMessage';
 import { CreateGroupDto } from '../Models/CreateGroupDto';
 import GroupMessage from '../Models/GroupMessage';
 import { UpdateGroupNameDto } from '../Models/UpdateGroupDto';
+import { MarkAsReadDto } from '../Models/MarkAsReadDto';
 
 
 axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -86,6 +87,10 @@ const Messages = {
     GetGroupMessagesFromLastDays: (userId: string, groupId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/group/${userId}/${groupId}/${days}`, noAuth),
     GetMessagesFromLastDays: (channelId: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/${channelId}/last/${days}`, noAuth),
     GetPrivateMessagesFromNDays: (user1: string, user2: string, days: number, noAuth = false) => requests.get<ApiResponseModel>(`message/private/${user1}/${user2}/${days}`, noAuth),
+    GetUnreadPrivateMessageCounts: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`message/private/unread/count/${userId}`, noAuth),
+    GetUnreadGroupMessageCounts: (userId: string, noAuth = false) => requests.get<ApiResponseModel>(`message/group/unread/count/${userId}`, noAuth),
+    MarkGroupMessagesAsRead: (markAsReadDto: MarkAsReadDto, noAuth = false) => requests.post<ApiResponseModel>('message/group/mark-as-read', markAsReadDto, noAuth),
+    MarkPrivateMessagesAsRead: (markAsReadDto: MarkAsReadDto, noAuth = false) => requests.post<ApiResponseModel>('message/private/mark-as-read', markAsReadDto, noAuth),
 }
 const Friends = {
     SendFriendRequest: (friendRequest: FriendRequest, noAuth = false) => requests.post<ApiResponseModel>('friendship/send', friendRequest, noAuth),

@@ -6,6 +6,7 @@ import PrivateMessage from "../Models/PrivateMessage";
 import GroupMessage from "../Models/GroupMessage";
 import { NotificationDto } from "../Models/NotificationDto";
 import FriendStore  from "./friendStore";
+import { MarkAsReadDto } from "../Models/MarkAsReadDto";
 
 export default class SignalRStore {
     connection: HubConnection | null = null;
@@ -16,6 +17,8 @@ export default class SignalRStore {
     currentServer: string = "";
     isConnected: boolean = false;
     friendStore: FriendStore;
+    unreadPrivateMessages: Map<string, number> = new Map();
+    unreadGroupMessages: Map<string, number> = new Map();
     constructor(friendStore: FriendStore) {
         makeAutoObservable(this);
         this.friendStore = friendStore;
@@ -52,6 +55,7 @@ export default class SignalRStore {
 
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const userId = user.id;
+                await this.initializeUnreadCounts(userId);
                 try {
                     await this.connection.invoke("SetUserId", userId);
                 } catch (error) {
@@ -74,6 +78,28 @@ export default class SignalRStore {
             }
         }
     };
+
+    async initializeUnreadCounts(userId: string) {
+        try {
+            const privateUnreads = await agent.Messages.GetUnreadPrivateMessageCounts(userId);
+            console.log("Private unreads:", privateUnreads);
+            runInAction(() => {
+                privateUnreads.forEach(({key, count}: { key: string; count: number }) => {
+                    this.unreadPrivateMessages.set(key, count);
+                });
+            });
+    
+            const groupUnreads = await agent.Messages.GetUnreadGroupMessageCounts(userId);
+            console.log("Group unreads:", groupUnreads);
+            runInAction(() => {
+                groupUnreads.forEach(({groupId, count}: { groupId: string; count: number }) => {
+                    this.unreadGroupMessages.set(groupId, count);
+                });
+            });
+        } catch (error) {
+            console.error("Error initializing unread counts:", error);
+        }
+    }
 
     stopConnection = async () => {
         try {
@@ -191,7 +217,25 @@ export default class SignalRStore {
         console.log("🔔 Notification received:", notification);
         switch (notification.type) {
             case "NewPrivateMessage":
-                console.log("New private message notification:", notification);
+                const privateMsg = notification.payload.messageDto;
+                const key = [privateMsg.senderId, privateMsg.receiverId].sort().join("-");
+                if (!window.location.pathname.includes(`/main/friend/${key}`)) {
+                runInAction(() => {
+                    const currentUnread = this.unreadPrivateMessages.get(key) || 0;
+                    this.unreadPrivateMessages.set(key, currentUnread + 1);
+                });
+            }
+                break;
+                
+            case "NewGroupMessage":
+                const groupMsg = notification.payload.messageDto;
+                const groupId = groupMsg.groupId;
+                if (!window.location.pathname.includes(`/main/group/${groupId}`)) {
+                    runInAction(() => {
+                        const currentUnread = this.unreadGroupMessages.get(groupId) || 0;
+                        this.unreadGroupMessages.set(groupId, currentUnread + 1);
+                    });
+                }
                 break;
             case "AddedToGroup":
                 console.log("Added to group notification:", notification);
@@ -201,7 +245,7 @@ export default class SignalRStore {
                 console.log("❌ You were kicked from the group:", notification.payload.groupId);
                 if (typeof notification.payload === 'object' && notification.payload !== null && 'groupId' in notification.payload) {
                     const groupId = notification.payload.groupId;        
-
+                    this.refreshFriendGroups();
                     if (window.location.pathname.includes(`/main/group/${groupId}`)) {
                         window.location.href = "/main";
                     }
@@ -228,10 +272,54 @@ export default class SignalRStore {
     handleReceiveGroupMessage = (message: GroupMessage) => {
         const key = message.groupId;
         runInAction(() => {
-            console.log("messege received");
+            console.log("message received");
             const currentMessages = this.groupMessages.get(key) || [];
             this.groupMessages.set(key, [...currentMessages, message]);
         });
+    };
+
+    markMessagesAsRead = async (type: 'private' | 'group', id: string) => {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user.id;
+    
+        if (!userId) {
+            console.error("User ID not found");
+            return;
+        }
+    
+        try {
+            let dto: MarkAsReadDto;
+            
+            if (type === 'private') {
+                dto = {
+                    userId: userId,
+                    friendId: id, 
+                    groupId: undefined 
+                };
+            } else {
+                dto = {
+                    userId: userId,
+                    groupId: id,
+                    friendId: undefined 
+                };
+            }
+    
+            console.log("Sending DTO:", JSON.stringify(dto, null, 2));
+            
+            if (type === 'private') {
+                await agent.Messages.MarkPrivateMessagesAsRead(dto);
+                runInAction(() => {
+                    this.unreadPrivateMessages.set(id, 0);
+                });
+            } else {
+                await agent.Messages.MarkGroupMessagesAsRead(dto);
+                runInAction(() => {
+                    this.unreadGroupMessages.set(id, 0);
+                });
+            }
+        } catch (error) {
+            console.error(`Error marking ${type} messages as read:`, error);
+        }
     };
     clearMessages = () => {
         this.messages.clear();

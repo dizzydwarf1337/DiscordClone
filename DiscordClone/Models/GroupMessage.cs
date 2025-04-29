@@ -16,7 +16,7 @@ namespace DiscordClone.Models
         public virtual User Sender { get; set; } = null!;
         [ForeignKey("GroupId")]
         public virtual FriendGroup Group { get; set; } = null!;
-
         public ICollection<Reaction>? Reactions { get; set; }
+        public ICollection<User>? ReadBy { get; set; }
     }
 }
