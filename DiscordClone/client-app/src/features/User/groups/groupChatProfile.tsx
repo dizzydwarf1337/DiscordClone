@@ -20,7 +20,6 @@ export default observer(function GroupChatProfile() {
     const userId = userStore.user?.id;
     const key = groupId!;
 
-    // Pobieranie wiadomości
     useEffect(() => {
         const loadMessages = async () => {
             if (!userId || !groupId) return;
@@ -34,9 +33,9 @@ export default observer(function GroupChatProfile() {
 
                 await signalRStore.joinGroup(groupId);
 
-                runInAction(() => {
-                    signalRStore.groupMessages.set(key, newMessages);
-                    signalRStore.markMessagesAsRead('group', groupId);
+                runInAction(async () => {
+                    await signalRStore.groupMessages.set(key, newMessages);
+                    await signalRStore.markMessagesAsRead('group', groupId);
                 });
             } catch (error) {
                 console.error("Failed to load messages:", error);

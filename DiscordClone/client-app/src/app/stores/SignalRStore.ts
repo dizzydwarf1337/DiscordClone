@@ -6,6 +6,7 @@ import PrivateMessage from "../Models/PrivateMessage";
 import GroupMessage from "../Models/GroupMessage";
 import { NotificationDto } from "../Models/NotificationDto";
 import FriendStore  from "./friendStore";
+import { MarkAsReadDto } from "../Models/MarkAsReadDto";
 
 export default class SignalRStore {
     connection: HubConnection | null = null;
@@ -276,23 +277,46 @@ export default class SignalRStore {
     markMessagesAsRead = async (type: 'private' | 'group', id: string) => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const userId = user.id;
-
-        try {
-          if (type === 'private') {
-         //   await agent.Messages.MarkPrivateMessagesAsRead(userId, id);
-            runInAction(() => {
-              this.unreadPrivateMessages.set(id, 0);
-            });
-          } else {
-          //  await agent.Messages.MarkGroupMessagesAsRead(userId, id);
-            runInAction(() => {
-              this.unreadGroupMessages.set(id, 0);
-            });
-          }
-        } catch (error) {
-          console.error(`Error marking ${type} messages as read:`, error);
+    
+        if (!userId) {
+            console.error("User ID not found");
+            return;
         }
-      };
+    
+        try {
+            let dto: MarkAsReadDto;
+            
+            if (type === 'private') {
+                dto = {
+                    userId: userId,
+                    friendId: id, 
+                    groupId: undefined 
+                };
+            } else {
+                dto = {
+                    userId: userId,
+                    groupId: id,
+                    friendId: undefined 
+                };
+            }
+    
+            console.log("Sending DTO:", JSON.stringify(dto, null, 2));
+            
+            if (type === 'private') {
+                await agent.Messages.MarkPrivateMessagesAsRead(dto);
+                runInAction(() => {
+                    this.unreadPrivateMessages.set(id, 0);
+                });
+            } else {
+                await agent.Messages.MarkGroupMessagesAsRead(dto);
+                runInAction(() => {
+                    this.unreadGroupMessages.set(id, 0);
+                });
+            }
+        } catch (error) {
+            console.error(`Error marking ${type} messages as read:`, error);
+        }
+    };
     clearMessages = () => {
         this.messages.clear();
     };

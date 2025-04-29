@@ -56,16 +56,22 @@ export default observer(function ChannelDashboard() {
     }, [friendStore, userStore, signalRStore]);
 
     useEffect(() => {
-        if (friendId) {
-            const key = [userStore.user?.id, friendId].sort().join("-");
-            signalRStore.markMessagesAsRead('private', key);
-        }
+        const markMessagesAsRead = async () => {
+            if (friendId) {
+                const key = [userStore.user?.id, friendId].sort().join("-");
+                await signalRStore.markMessagesAsRead('private', key);
+            }
+        };
+        markMessagesAsRead();
     }, [friendId, userStore.user?.id, signalRStore]);
 
     useEffect(() => {
-        if (groupId) {
-            signalRStore.markMessagesAsRead('group', groupId);
-        }
+        const markGroupMessagesAsRead = async () => {
+            if (groupId) {
+                await signalRStore.markMessagesAsRead('group', groupId);
+            }
+        };
+        markGroupMessagesAsRead();
     }, [groupId, signalRStore]);
 
     const handleClick = (friendId: string) => {

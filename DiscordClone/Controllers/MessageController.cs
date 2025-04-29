@@ -1,4 +1,5 @@
 ﻿using DiscordClone.Models.Dtos;
+using DiscordClone.Models; // Ensure this namespace contains MarkAsReadDto
 using DiscordClone.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -122,7 +123,39 @@ namespace DiscordClone.Controllers
             
             return HandleResult(await _messageService.GetUnreadPrivateMessageCountsAsync(userId));
         }
+        [HttpPost("group/mark-as-read")]
+        public async Task<IActionResult> MarkGroupMessagesAsRead([FromBody] MarkAsReadDto markAsReadDto)
+        {
+            if (markAsReadDto.UserId == Guid.Empty || markAsReadDto.GroupId == Guid.Empty)
+            return BadRequest("Invalid user or group ID");
 
+            try
+            {
+            await _messageService.MarkGroupMessagesAsReadAsync(markAsReadDto.UserId, markAsReadDto.GroupId);
+            return Ok(new { message = "Group messages marked as read successfully" });
+            }
+            catch (Exception ex)
+            {
+            return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("private/mark-as-read")]
+        public async Task<IActionResult> MarkPrivateMessagesAsRead([FromBody] MarkAsReadDto markAsReadDto)
+        {
+            if (markAsReadDto.UserId == Guid.Empty || markAsReadDto.FriendId == Guid.Empty)
+            return BadRequest("Invalid user or friend ID");
+
+            try
+            {
+            await _messageService.MarkPrivateMessagesAsReadAsync(markAsReadDto.UserId, markAsReadDto.FriendId);
+            return Ok(new { message = "Private messages marked as read successfully" });
+            }
+            catch (Exception ex)
+            {
+            return BadRequest(new { error = ex.Message });
+            }
+        }
         [HttpGet("group/unread/count/{userId}")]
         public async Task<IActionResult> GetUnreadGroupMessageCounts(Guid userId)
         {
