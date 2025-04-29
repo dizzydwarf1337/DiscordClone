@@ -219,19 +219,23 @@ export default class SignalRStore {
             case "NewPrivateMessage":
                 const privateMsg = notification.payload.messageDto;
                 const key = [privateMsg.senderId, privateMsg.receiverId].sort().join("-");
+                if (!window.location.pathname.includes(`/main/friend/${key}`)) {
                 runInAction(() => {
                     const currentUnread = this.unreadPrivateMessages.get(key) || 0;
                     this.unreadPrivateMessages.set(key, currentUnread + 1);
                 });
+            }
                 break;
                 
             case "NewGroupMessage":
                 const groupMsg = notification.payload.messageDto;
                 const groupId = groupMsg.groupId;
-                runInAction(() => {
-                    const currentUnread = this.unreadGroupMessages.get(groupId) || 0;
-                    this.unreadGroupMessages.set(groupId, currentUnread + 1);
-                });
+                if (!window.location.pathname.includes(`/main/group/${groupId}`)) {
+                    runInAction(() => {
+                        const currentUnread = this.unreadGroupMessages.get(groupId) || 0;
+                        this.unreadGroupMessages.set(groupId, currentUnread + 1);
+                    });
+                }
                 break;
             case "AddedToGroup":
                 console.log("Added to group notification:", notification);

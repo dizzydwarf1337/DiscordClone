@@ -53,7 +53,7 @@ export default observer(function ChannelDashboard() {
         };
         
         loadInitialData();
-    }, [friendStore, userStore, signalRStore]);
+    }, []);
 
     useEffect(() => {
         const markMessagesAsRead = async () => {
