@@ -361,6 +361,13 @@ export default class SignalRStore {
             case "FriendRequestAccepted":
                 await this.refreshFriends();
                 break;
+            case "FriendRemoved":
+                if (window.location.pathname.includes(`/main/friend/${notification.payload.removedId}`)
+                     || window.location.pathname.includes(`/main/friend/${notification.payload.removedFriendId}`)) {
+                    window.location.href = "/main";
+                }
+                await this.refreshFriends();
+                break;
         }
     };
 

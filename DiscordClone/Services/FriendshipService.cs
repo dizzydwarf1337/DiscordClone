@@ -525,7 +525,47 @@ public class FriendshipService
             return Result<bool>.Failure(ex.InnerException?.Message ?? "Error removing user from group");
         }
     }
+    public async Task<Result<bool>> RemoveFriendAsync(Guid userId, Guid friendId)
+    {
+        _logger.LogInformation("Removing friendship between user: {UserId} and friend: {FriendId}", userId, friendId);
 
+        try
+        {
+            var friendship = await _context.Friendships
+                .FirstOrDefaultAsync(f => 
+                    (f.SenderId == userId && f.ReceiverId == friendId && f.Status == FriendshipStatus.Accepted) ||
+                    (f.SenderId == friendId && f.ReceiverId == userId && f.Status == FriendshipStatus.Accepted));
+
+            if (friendship == null)
+            {
+                return Result<bool>.Failure("Friendship not found.");
+            }
+
+            _context.Friendships.Remove(friendship);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Friendship removed successfully between user: {UserId} and friend: {FriendId}", userId, friendId);
+
+            var notification = new NotificationDto
+            {
+                ReceiversId = new List<Guid> { userId, friendId },
+                Type = "FriendRemoved",
+                Payload = new
+                {
+                    RemovedId = userId,
+                    RemovedFriendId = friendId
+                }
+            };
+            await _notificattionService.SendNotification(notification);
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing friendship between user: {UserId} and friend: {FriendId}", userId, friendId);
+            return Result<bool>.Failure("An error occurred while removing the friendship.");
+        }
+    }
 
 
 }

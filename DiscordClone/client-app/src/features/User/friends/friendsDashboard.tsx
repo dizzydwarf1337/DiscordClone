@@ -7,6 +7,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import CallIcon from '@mui/icons-material/Call';
 import GroupManagementDialog from "../groups/groupManagmentDialog";
 import { User } from "../../../app/Models/user";
 
@@ -14,13 +15,16 @@ export default observer(function ChannelDashboard() {
     const { userStore, friendStore, signalRStore } = useStore();
     const navigate = useNavigate();
     const { friendId, groupId } = useParams();
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [groupAnchorEl, setGroupAnchorEl] = useState<null | HTMLElement>(null);
+    const [friendAnchorEl, setFriendAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedGroup, setSelectedGroup] = useState<{ id: string, name: string, isOwner: boolean, members: User[] } | null>(null);
-    const open = Boolean(anchorEl);
+    const [selectedFriend, setSelectedFriend] = useState<User | null>(null);
+    const groupMenuOpen = Boolean(groupAnchorEl);
+    const friendMenuOpen = Boolean(friendAnchorEl);
     const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
     
     const handleOpenEditDialog = () => {
-        setAnchorEl(null);
+        setGroupAnchorEl(null);
         setIsDialogOpen(true);
     }
     const closeDialog = () => setIsDialogOpen(false);
@@ -85,12 +89,23 @@ export default observer(function ChannelDashboard() {
     const handleGroupMenuClick = (event: React.MouseEvent<HTMLElement>, groupId: string, name: string, isOwner: boolean, members: User[]) => {
         event.stopPropagation();
         setSelectedGroup({ id: groupId, name, isOwner, members});
-        setAnchorEl(event.currentTarget);
+        setGroupAnchorEl(event.currentTarget);
     };
 
-    const handleClose = () => {
-        setAnchorEl(null);
+    const handleFriendMenuClick = (event: React.MouseEvent<HTMLElement>, friend: User) => {
+        event.stopPropagation();
+        setSelectedFriend(friend);
+        setFriendAnchorEl(event.currentTarget);
+    };
+
+    const handleCloseGroupMenu = () => {
+        setGroupAnchorEl(null);
         setSelectedGroup(null);
+    };
+
+    const handleCloseFriendMenu = () => {
+        setFriendAnchorEl(null);
+        setSelectedFriend(null);
     };
 
     const handleDeleteGroup = async () => {
@@ -102,7 +117,7 @@ export default observer(function ChannelDashboard() {
             } catch (error) {
                 console.error("Failed to delete group:", error);
             }
-            handleClose();
+            handleCloseGroupMenu();
         }
     };
 
@@ -115,8 +130,30 @@ export default observer(function ChannelDashboard() {
             } catch (error) {
                 console.error("Failed to leave group:", error);
             }
-            handleClose();
+            handleCloseGroupMenu();
         }
+    };
+
+    const handleRemoveFriend = async () => {
+        if (selectedFriend && userStore.user) {
+            try {
+                await friendStore.RemoveFriend(userStore.user.id, selectedFriend.id);
+                const friends = await friendStore.GetUserFriendsById(userStore.user.id);
+                friendStore.setFriends(friends || []);
+                if (friendId === selectedFriend.id) {
+                    navigate('/main');
+                }
+            } catch (error) {
+                console.error("Failed to remove friend:", error);
+            }
+            handleCloseFriendMenu();
+        }
+    };
+
+    const handleStartCall = () => {
+        // Implement call functionality here
+        console.log("Starting call with", selectedFriend?.username);
+        handleCloseFriendMenu();
     };
 
     const getUnreadFriendMessageCount = (friendId: string) => {
@@ -248,6 +285,13 @@ export default observer(function ChannelDashboard() {
                                 >
                                     <Typography ml="auto" mr="auto" variant="body1">{friend.username}</Typography>
                                 </Badge>
+                                <IconButton
+                                    size="small"
+                                    onClick={(e) => handleFriendMenuClick(e, friend)}
+                                    sx={{ color: 'white' }}
+                                >
+                                    <MoreVertIcon fontSize="small" />
+                                </IconButton>
                             </Box>
                         </Box>
                     ))
@@ -260,9 +304,9 @@ export default observer(function ChannelDashboard() {
 
             {/* Group management menu */}
             <Menu
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
+                anchorEl={groupAnchorEl}
+                open={groupMenuOpen}
+                onClose={handleCloseGroupMenu}
                 onClick={(e) => e.stopPropagation()}
                 PaperProps={{
                     elevation: 0,
@@ -316,6 +360,55 @@ export default observer(function ChannelDashboard() {
                         Leave group
                     </MenuItem>
                 )}
+            </Menu>
+
+            {/* Friend management menu */}
+            <Menu
+                anchorEl={friendAnchorEl}
+                open={friendMenuOpen}
+                onClose={handleCloseFriendMenu}
+                onClick={(e) => e.stopPropagation()}
+                PaperProps={{
+                    elevation: 0,
+                    sx: {
+                        overflow: 'visible',
+                        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                        mt: 1.5,
+                        '& .MuiAvatar-root': {
+                            width: 32,
+                            height: 32,
+                            ml: -0.5,
+                            mr: 1,
+                        },
+                        '&:before': {
+                            content: '""',
+                            display: 'block',
+                            position: 'absolute',
+                            top: 0,
+                            right: 14,
+                            width: 10,
+                            height: 10,
+                            bgcolor: 'background.paper',
+                            transform: 'translateY(-50%) rotate(45deg)',
+                            zIndex: 0,
+                        },
+                    },
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+                <MenuItem onClick={handleStartCall}>
+                    <ListItemIcon>
+                        <CallIcon fontSize="small" />
+                    </ListItemIcon>
+                    Call
+                </MenuItem>
+                <MenuItem onClick={handleRemoveFriend}>
+                    <ListItemIcon>
+                        <DeleteIcon fontSize="small" />
+                    </ListItemIcon>
+                    Remove Friend
+                </MenuItem>
             </Menu>
 
             {/* Main content area */}

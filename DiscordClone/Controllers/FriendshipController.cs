@@ -63,6 +63,12 @@ namespace DiscordClone.Controllers
             return HandleResult(await _friendshipService.GetFriendGroupsById(userId));
         }
 
+        [HttpDelete("remove/{userId}/{friendId}")]
+        public async Task<IActionResult> RemoveFriend(Guid userId, Guid friendId)
+        {
+            return HandleResult(await _friendshipService.RemoveFriendAsync(userId, friendId));
+        }
+
         [HttpPost("friendsGroup/create")]
         public async Task<IActionResult> CreateGroup([FromBody] CreateGroupDto createGroupDto)
         {
