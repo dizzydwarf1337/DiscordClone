@@ -15,6 +15,8 @@ export default observer(function FriendChatProfile() {
     const [page, setPage] = useState<number>(1);
     const [searchQuery, setSearchQuery] = useState<string>("");
     const [filteredMessages, setFilteredMessages] = useState<PrivateMessage[]>([]);
+    const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
+    const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
     useEffect(() => {
         const loadMessages = async () => {
@@ -25,7 +27,8 @@ export default observer(function FriendChatProfile() {
                     page
                 );
                 runInAction(() => {
-                    signalRStore.privateMessages.set(key, newMessages);
+                    const currentMessages = signalRStore.privateMessages.get(key) || [];
+                    signalRStore.privateMessages.set(key, [...currentMessages, ...newMessages]);
                 });
             } catch (error) {
                 console.error("Failed to load messages:", error);
@@ -38,12 +41,33 @@ export default observer(function FriendChatProfile() {
     }, [friendId, page]);
 
     useEffect(() => {
-        const allMessages = signalRStore.privateMessages.get(key) || [];
-        const filtered = allMessages.filter((message) =>
-            message.content.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setFilteredMessages(filtered);
+        const filterMessages = async () => {
+            const allMessages = signalRStore.privateMessages.get(key) || [];
+            const filtered = allMessages.filter((message) =>
+                message.content.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setFilteredMessages(filtered);
+            if (friendId) {
+                await signalRStore.markMessagesAsRead('private', friendId);
+            }
+        };
+
+        filterMessages();
     }, [searchQuery, signalRStore.privateMessages.get(key)?.length]);
+
+    useEffect(() => {
+        if (containerRef && shouldAutoScroll) {
+            containerRef.scrollTop = containerRef.scrollHeight;
+        }
+    }, [filteredMessages, containerRef, shouldAutoScroll]);
+
+    const handleScroll = () => {
+        if (containerRef) {
+            const { scrollTop, scrollHeight, clientHeight } = containerRef;
+            const isNearBottom = scrollHeight - (scrollTop + clientHeight) < 50;
+            setShouldAutoScroll(isNearBottom);
+        }
+    };
 
     return (
         <Box display="flex" flexDirection="column" height="90vh" width="100%" sx={{ overflow: "hidden" }}>
@@ -58,14 +82,16 @@ export default observer(function FriendChatProfile() {
             </Box>
 
             <Box
+                ref={setContainerRef}
                 display="flex"
-                flexDirection="column-reverse"
+                flexDirection="column"
                 overflow="auto"
                 sx={{
                     flexGrow: 1,
                     borderRadius: "20px",
                     m: "10px",
                 }}
+                onScroll={handleScroll}
             >
                 {filteredMessages.length > 0 ? (
                     filteredMessages.map((message) => (
@@ -95,7 +121,12 @@ export default observer(function FriendChatProfile() {
             </Box>
 
             <Box sx={{ m: "10px" }}>
-                <PrivateMessageTextField />
+                <PrivateMessageTextField 
+                    onSend={() => {
+                        // When sending a new message, enable auto-scroll
+                        setShouldAutoScroll(true);
+                    }}
+                />
             </Box>
         </Box>
     );

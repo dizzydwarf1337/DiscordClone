@@ -6,14 +6,21 @@ import { observer } from "mobx-react-lite";
 import { useParams } from "react-router-dom";
 import PrivateMessage from "../../../app/Models/PrivateMessage";
 import SendIcon from '@mui/icons-material/Send';
-export default observer(function PrivateMessageTextField() {
+
+interface Props {
+    onSend?: () => void;
+}
+
+export default observer(function PrivateMessageTextField({ onSend }: Props) {
     const { signalRStore, userStore } = useStore();
     const [content, setContent] = useState("");
     const { friendId } = useParams();
+    
     const handleMessageChange = (e: ChangeEvent<HTMLInputElement>) => {
         setContent(e.target.value);
     };
-    useEffect(() => { },[signalRStore])
+
+    useEffect(() => { }, [signalRStore]);
 
     const handleSend = async () => {
         if (!content.trim()) return;
@@ -25,10 +32,15 @@ export default observer(function PrivateMessageTextField() {
             content: content.trim(),
             receiverId: friendId!,
         };
+        
         try {
             await signalRStore.sendPrivateMessage(message);
             setContent("");
-
+            
+            // Call the onSend callback if provided
+            if (onSend) {
+                onSend();
+            }
         } catch (error) {
             console.error("Failed to send message:", error);
         }

@@ -86,7 +86,7 @@ export default class SignalRStore {
         if (user.id) {
             await Promise.all([
                 this.connection?.invoke("SetUserId", user.id),
-                this.initializeUnreadCounts(user.id), // Ensure this method is implemented below
+                this.initializeUnreadCounts(user.id),
                 this.connectToUserChannels(user.id)
             ]);
         }
@@ -262,7 +262,7 @@ export default class SignalRStore {
                 privateMessages: privateUnreadCounts,
                 groupMessages: groupUnreadCounts
             };
-            
+
             runInAction(() => {
                 this.unreadPrivateMessages = new Map(unreadCounts.privateMessages);
                 this.unreadGroupMessages = new Map(unreadCounts.groupMessages);
@@ -293,20 +293,39 @@ export default class SignalRStore {
         }
     };
 
-    handleReceiveNotification = (notification: NotificationDto) => {
+    refreshFriends = async () => {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userId = user.id;
+        if (!userId) {
+            console.error("User ID not found in local storage");
+            return;
+        }
+        try {
+            const friends = await agent.Friends.GetUserFriendsById(userId);
+            runInAction(() => {
+                this.friendStore.friends = friends;
+            });
+            console.log("Friend store refreshed with new friends");
+        }
+        catch (error) {
+            console.error("Error refreshing friend store:", error);
+        }
+    };
+
+    handleReceiveNotification = async (notification: NotificationDto) => {
         console.log("🔔 Notification received:", notification);
         switch (notification.type) {
             case "NewPrivateMessage":
                 const privateMsg = notification.payload.messageDto;
                 const key = [privateMsg.senderId, privateMsg.receiverId].sort().join("-");
-                if (!window.location.pathname.includes(`/main/friend/${key}`)) {
-                runInAction(() => {
-                    const currentUnread = this.unreadPrivateMessages.get(key) || 0;
-                    this.unreadPrivateMessages.set(key, currentUnread + 1);
-                });
-            }
+                if (!window.location.pathname.includes(`/main/friend/${privateMsg.receiverId}`) && 
+                !window.location.pathname.includes(`/main/friend/${privateMsg.senderId}`)) {
+                    runInAction(() => {
+                        const currentUnread = this.unreadPrivateMessages.get(key) || 0;
+                        this.unreadPrivateMessages.set(key, currentUnread + 1);
+                    });
+                }
                 break;
-                
             case "NewGroupMessage":
                 const groupMsg = notification.payload.messageDto;
                 const groupId = groupMsg.groupId;
@@ -331,6 +350,24 @@ export default class SignalRStore {
                     }
                 }
                 break;
+            case "ReceivedFriendRequest":
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                const friendRequests = await this.friendStore.GetUserFriendRequestsById(user.id);
+                console.log("Friend requests:", friendRequests);
+                runInAction(() => {
+                    this.friendStore.setFriendsRequests(friendRequests);
+                });
+                break;
+            case "FriendRequestAccepted":
+                await this.refreshFriends();
+                break;
+            case "FriendRemoved":
+                if (window.location.pathname.includes(`/main/friend/${notification.payload.removedId}`)
+                     || window.location.pathname.includes(`/main/friend/${notification.payload.removedFriendId}`)) {
+                    window.location.href = "/main";
+                }
+                await this.refreshFriends();
+                break;
         }
     };
 
@@ -346,7 +383,6 @@ export default class SignalRStore {
             console.log("Message received");
             const currentMessages = this.privateMessages.get(key) || [];
             this.privateMessages.set(key, [...currentMessages, message]);
-            console.log("Private messages updated:", this.privateMessages);
         });
     };
     handleReceiveGroupMessage = (message: GroupMessage) => {
@@ -389,7 +425,8 @@ export default class SignalRStore {
             if (type === 'private') {
                 await agent.Messages.MarkPrivateMessagesAsRead(dto);
                 runInAction(() => {
-                    this.unreadPrivateMessages.set(id, 0);
+                    let key = [userId, id].sort().join("-");
+                    this.unreadPrivateMessages.set(key, 0);
                 });
             } else {
                 await agent.Messages.MarkGroupMessagesAsRead(dto);

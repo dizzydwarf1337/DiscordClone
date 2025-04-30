@@ -162,7 +162,7 @@ export default class FriendStore {
         try {
             this.setFriendLoading(true);
             await agent.Friends.AcceptFriendRequest(friendRequest);
-            
+            this.setFriendsRequests(this.friendRequests.filter(x => x.requestId !== friendRequest.requestId));
         }
         catch (error) {
             console.log(error);
@@ -175,7 +175,20 @@ export default class FriendStore {
         try {
             this.setFriendLoading(true);
             await agent.Friends.RejectFriendRequest(friendRequest);
-         
+            this.setFriendsRequests(this.friendRequests.filter(x => x.requestId !== friendRequest.requestId));
+        }
+        catch (error) {
+            console.log(error);
+        }
+        finally {
+            this.setFriendLoading(false);
+        }
+    }
+    RemoveFriend = async (userId: string, friendId: string) => {
+        try {
+            this.setFriendLoading(true);
+            await agent.Friends.RemoveFriend(userId, friendId);
+            this.setFriends(this.friends.filter(x => x.id !== friendId));
         }
         catch (error) {
             console.log(error);
