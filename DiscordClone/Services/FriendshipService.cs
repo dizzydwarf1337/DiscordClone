@@ -40,6 +40,16 @@ public class FriendshipService
         _context.Friendships.Add(friendship);
         await _context.SaveChangesAsync();
 
+                var notification = new NotificationDto
+        {
+            ReceiversId = new List<Guid> { receiverId },
+            Type = "ReceivedFriendRequest",
+            Payload = new {
+                hello = "hello",
+            }
+        };
+        await _notificattionService.SendNotification(notification);
+
         return Result<bool>.Success(true);
     }
     public async Task<Result<bool>> SendFriendRequestByUserName(FriendsUsernameRequestDto friendsUsernameRequest)
@@ -66,6 +76,17 @@ public class FriendshipService
         };
         await _context.Friendships.AddAsync(friendship);
         await _context.SaveChangesAsync();
+
+        var notification = new NotificationDto
+        {
+            ReceiversId = new List<Guid> { user.Id },
+            Type = "ReceivedFriendRequest",
+            Payload = new {
+                hello = "hello",
+            }
+        };
+        await _notificattionService.SendNotification(notification);
+
         return Result<bool>.Success(true);
     }
     // Akceptowanie zaproszenia do przyjaźni
@@ -83,7 +104,17 @@ public class FriendshipService
         friendship.AcceptedAt = DateTime.UtcNow;
         _context.Friendships.Update(friendship);
         await _context.SaveChangesAsync();
-
+        var notification = new NotificationDto
+        {
+            ReceiversId = new List<Guid> { senderId, receiverId },
+            Type = "FriendRequestAccepted",
+            Payload = new
+            {
+                GroupName = friendship.Sender.UserName,
+                AcceptedBy = receiverId
+            }
+        };
+        await _notificattionService.SendNotification(notification);
         return Result<bool>.Success(true);
     }
 
