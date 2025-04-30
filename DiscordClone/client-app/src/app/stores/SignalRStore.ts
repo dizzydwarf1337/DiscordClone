@@ -318,14 +318,14 @@ export default class SignalRStore {
             case "NewPrivateMessage":
                 const privateMsg = notification.payload.messageDto;
                 const key = [privateMsg.senderId, privateMsg.receiverId].sort().join("-");
-                if (!window.location.pathname.includes(`/main/friend/${key}`)) {
-                runInAction(() => {
-                    const currentUnread = this.unreadPrivateMessages.get(key) || 0;
-                    this.unreadPrivateMessages.set(key, currentUnread + 1);
-                });
-            }
+                if (!window.location.pathname.includes(`/main/friend/${privateMsg.receiverId}`) && 
+                !window.location.pathname.includes(`/main/friend/${privateMsg.senderId}`)) {
+                    runInAction(() => {
+                        const currentUnread = this.unreadPrivateMessages.get(key) || 0;
+                        this.unreadPrivateMessages.set(key, currentUnread + 1);
+                    });
+                }
                 break;
-                
             case "NewGroupMessage":
                 const groupMsg = notification.payload.messageDto;
                 const groupId = groupMsg.groupId;
@@ -383,7 +383,6 @@ export default class SignalRStore {
             console.log("Message received");
             const currentMessages = this.privateMessages.get(key) || [];
             this.privateMessages.set(key, [...currentMessages, message]);
-            console.log("Private messages updated:", this.privateMessages);
         });
     };
     handleReceiveGroupMessage = (message: GroupMessage) => {
@@ -426,7 +425,8 @@ export default class SignalRStore {
             if (type === 'private') {
                 await agent.Messages.MarkPrivateMessagesAsRead(dto);
                 runInAction(() => {
-                    this.unreadPrivateMessages.set(id, 0);
+                    let key = [userId, id].sort().join("-");
+                    this.unreadPrivateMessages.set(key, 0);
                 });
             } else {
                 await agent.Messages.MarkGroupMessagesAsRead(dto);

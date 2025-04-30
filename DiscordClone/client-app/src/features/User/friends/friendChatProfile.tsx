@@ -36,13 +36,21 @@ export default observer(function FriendChatProfile() {
             loadMessages();
         }
     }, [friendId, page]);
+    
 
     useEffect(() => {
-        const allMessages = signalRStore.privateMessages.get(key) || [];
-        const filtered = allMessages.filter((message) =>
-            message.content.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setFilteredMessages(filtered);
+        const filterMessages = async () => {
+            const allMessages = signalRStore.privateMessages.get(key) || [];
+            const filtered = allMessages.filter((message) =>
+                message.content.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            setFilteredMessages(filtered);
+            if (friendId) {
+                await signalRStore.markMessagesAsRead('private', friendId);
+            }
+        };
+
+        filterMessages();
     }, [searchQuery, signalRStore.privateMessages.get(key)?.length]);
 
     return (

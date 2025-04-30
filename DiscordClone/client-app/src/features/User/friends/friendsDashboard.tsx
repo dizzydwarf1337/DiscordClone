@@ -62,12 +62,11 @@ export default observer(function ChannelDashboard() {
     useEffect(() => {
         const markMessagesAsRead = async () => {
             if (friendId) {
-                const key = [userStore.user?.id, friendId].sort().join("-");
-                await signalRStore.markMessagesAsRead('private', key);
+                await signalRStore.markMessagesAsRead('private', friendId);
             }
         };
         markMessagesAsRead();
-    }, [friendId, userStore.user?.id, signalRStore]);
+    }, [friendId, signalRStore]);
 
     useEffect(() => {
         const markGroupMessagesAsRead = async () => {
