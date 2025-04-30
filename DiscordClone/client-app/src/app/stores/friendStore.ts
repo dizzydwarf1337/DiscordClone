@@ -162,7 +162,7 @@ export default class FriendStore {
         try {
             this.setFriendLoading(true);
             await agent.Friends.AcceptFriendRequest(friendRequest);
-            
+            this.setFriendsRequests(this.friendRequests.filter(x => x.requestId !== friendRequest.requestId));
         }
         catch (error) {
             console.log(error);
@@ -175,7 +175,7 @@ export default class FriendStore {
         try {
             this.setFriendLoading(true);
             await agent.Friends.RejectFriendRequest(friendRequest);
-         
+            this.setFriendsRequests(this.friendRequests.filter(x => x.requestId !== friendRequest.requestId));
         }
         catch (error) {
             console.log(error);

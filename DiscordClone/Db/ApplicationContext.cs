@@ -198,7 +198,6 @@ namespace DiscordClone.Db
                 .HasForeignKey(i => i.ServerId)
                 .OnDelete(DeleteBehavior.NoAction); // Or Restrict
 
-
             modelBuilder.Entity<FriendGroup>()
                 .HasOne(fg => fg.Creator)
                 .WithMany() // Assuming no navigation property from User to FriendGroups
@@ -272,11 +271,12 @@ namespace DiscordClone.Db
             });
 
 
+
             modelBuilder.Entity<GroupMessage>()
     .HasOne(gm => gm.Group)
     .WithMany()
     .HasForeignKey(gm => gm.GroupId)
-    .OnDelete(DeleteBehavior.Cascade); // This sets up cascading delete
+    .OnDelete(DeleteBehavior.NoAction); // Prevent cascading delete
         }
     }
 
