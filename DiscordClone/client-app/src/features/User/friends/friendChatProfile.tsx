@@ -7,6 +7,7 @@ import { runInAction } from "mobx";
 import agent from "../../../app/API/agent";
 import PrivateChatMessage from "./PrivateChatMessage";
 import PrivateMessageTextField from "./PrivateMessageTextField";
+import PrivateMessage from "../../../app/Models/PrivateMessage";
 
 export default observer(function FriendChatProfile() {
     const { userStore, signalRStore } = useStore();
@@ -28,7 +29,13 @@ export default observer(function FriendChatProfile() {
                 );
                 runInAction(() => {
                     const currentMessages = signalRStore.privateMessages.get(key) || [];
-                    signalRStore.privateMessages.set(key, [...currentMessages, ...newMessages]);
+                    const uniqueMessages = newMessages.filter(
+                        (newMessage) => !currentMessages.some((msg) => msg.messageId === newMessage.messageId)
+                    );
+                    const sortedMessages = [...currentMessages, ...uniqueMessages].sort(
+                        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+                    );
+                    signalRStore.privateMessages.set(key, sortedMessages);
                 });
             } catch (error) {
                 console.error("Failed to load messages:", error);

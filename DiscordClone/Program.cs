@@ -90,7 +90,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
+    
     string[] roleNames = { "Admin", "User" };
     foreach (var roleName in roleNames)
     {

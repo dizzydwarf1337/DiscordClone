@@ -332,9 +332,10 @@ namespace DiscordClone.Services
         {
             var fromDate = DateTime.UtcNow.AddDays(-days);
             var messages = await _applicationContext.Messages
-                .Include(m => m.User)         
-                .Include(m => m.Reactions)  
+                .Include(m => m.User)
+                .Include(m => m.Reactions)
                 .Where(m => m.ChannelId == channelId && m.CreatedAt >= fromDate)
+                .OrderByDescending(m => m.CreatedAt) 
                 .ToListAsync();
 
             if (messages == null || messages.Count == 0)
@@ -354,7 +355,7 @@ namespace DiscordClone.Services
                     UserId = r.UserId,
                     ReactionType = r.ReactionType,
                 }).ToList() : new List<ReactionDto>() // Ensure to handle null Reactions
-            }).OrderBy(x => x.CreatedAt).ToList();
+            }).OrderByDescending(x => x.CreatedAt).ToList(); 
 
             return Result<List<MessageDto>>.Success(messageDtos);
         }
