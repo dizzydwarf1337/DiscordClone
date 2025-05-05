@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useStore } from '../stores/store';
 import HomePage from './homePage';
 import NavBar from './navBar';
@@ -7,15 +7,22 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AdminPanel from '../../features/Admin/AdminPanel';
 import { ThemeProvider } from '@emotion/react';
 import theme from '../theme/theme';
-import { Box } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import SideBar from './sideBar';
-
-function App() {
+import IncomingCallModal from '../../features/User/calls/private/incomingCallModal';
+import { observer } from "mobx-react-lite";
+export default observer (function App() {
 
     const location = useLocation();
-    const { userStore } = useStore();
+    const { userStore, signalRStore } = useStore();
     const navigate = useNavigate();
-
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+    useEffect(() => {
+        if (audioRef.current) {
+            signalRStore.setAudioElement(audioRef.current);
+            console.log(audioRef);
+        }
+    }, [audioRef.current,signalRStore]);
     useEffect(() => {
         if (location.pathname === '/main' && !userStore.getLoggedIn()) {
             navigate('/login');
@@ -49,10 +56,11 @@ function App() {
                         <Outlet />
                     )}
                 </>
-            )}
+                )}
+                {signalRStore.currentCall && <IncomingCallModal />}
+
+                <audio  ref={audioRef} autoPlay controls style={{ margin: "100px" }} />
             </>
         </ThemeProvider>
     );
-}
-
-export default App;
+})

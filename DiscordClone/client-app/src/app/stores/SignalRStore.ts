@@ -24,6 +24,14 @@ export default class SignalRStore {
     friendStore: FriendStore;
     unreadPrivateMessages = new Map<string, number>();
     unreadGroupMessages = new Map<string, number>();
+    currentCall: { callerId: string; targetId: string } | null = null;
+    isInCall: boolean = false;
+    peerConnection: RTCPeerConnection | null = null;
+    iceCandidateBuffer: RTCIceCandidate[] = [];
+    localStream: MediaStream | null = null;
+    remoteStream: MediaStream | null = null;
+    isRinging: boolean = false;
+    audioElement: HTMLAudioElement | null = null;
 
     constructor(friendStore: FriendStore) {
         makeAutoObservable(this);
@@ -52,10 +60,10 @@ export default class SignalRStore {
                 })
                 .withAutomaticReconnect({
                     nextRetryDelayInMilliseconds: retryContext => {
-                        if (retryContext.elapsedMilliseconds < 120000) { // 2 minutes
+                        if (retryContext.elapsedMilliseconds < 120000) {
                             return Math.min(retryContext.previousRetryCount * 2000, 10000);
                         }
-                        return 15000; // After 2 minutes, retry every 15 seconds
+                        return 15000;
                     }
                 })
                 .configureLogging(LogLevel.Warning)
@@ -144,6 +152,54 @@ export default class SignalRStore {
         this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
         this.connection.on("ReceiveGroupMessage", this.handleReceiveGroupMessage);
         this.connection.on("ReceiveNotification", this.handleReceiveNotification);
+        this.connection.on("ReceiveCall", (callUserDto) => {
+            console.log("ReceiveCall triggered:", callUserDto);
+            runInAction(() => {
+                this.currentCall = { callerId: callUserDto.callerId, targetId: callUserDto.targetId };
+            });
+            console.log("Updated currentCall:", this.currentCall);
+        });
+        this.connection.on("CallAccepted", (callerId) => {
+            console.log("Call accepted by:", callerId);
+            runInAction(() => {
+                this.isInCall = true;
+            });
+        });
+
+        this.connection.on("CallDeclined", (callerId) => {
+            console.log("Call declined by:", callerId);
+            runInAction(() => {
+                this.currentCall = null;
+                this.isRinging = false; 
+            });
+        });
+
+        this.connection.on("CallEnded", (callerId) => {
+            console.log("Call ended by:", callerId);
+            if (this.currentCall) {
+                runInAction(() => {
+                    this.currentCall = null;
+                    this.isInCall = false;
+                    this.isRinging = false;
+                });
+
+                if (this.peerConnection) {
+                    this.peerConnection.close();
+                    this.peerConnection = null;
+                }
+
+                this.localStream?.getTracks().forEach((track) => track.stop());
+                this.localStream = null;
+                this.remoteStream = null;
+
+                console.log("Call ended");
+            } else {
+                console.log("No active call to end.");
+            }
+        });
+
+        this.connection.on("ReceiveSDP", this.handleReceiveSDP);
+        this.connection.on("ReceiveIceCandidate", this.handleReceiveIceCandidate);
     }
 
     stopConnection = async () => {
@@ -441,4 +497,248 @@ export default class SignalRStore {
     clearMessages = () => {
         this.messages.clear();
     };
+    makeCall = async (targetId: string) => {
+        if (!this.connection) {
+            console.error("SignalR connection not established");
+            return;
+        }
+
+        try {
+            // Устанавливаем текущий звонок
+            let user = localStorage.getItem("user");
+            let callerId = JSON.parse(user || "{}").id;
+
+            runInAction(() => {
+                this.currentCall = { callerId, targetId };
+                this.isRinging = true;
+            });
+
+            // Создаём peerConnection
+            this.peerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
+
+            // Обработчик ICE кандидатов
+            this.peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log("ICE Candidate:", event.candidate);
+                    this.connection?.invoke("SendIceCandidate", targetId, JSON.stringify(event.candidate));
+                }
+            };
+
+            // Обработчик добавления удалённого потока
+            this.peerConnection.ontrack = (event) => {
+                console.log("ontrack triggered", event);
+                if (!this.remoteStream) {
+                    this.remoteStream = new MediaStream();
+                }
+                this.remoteStream.addTrack(event.track);
+                console.log("Remote track added:", event.track);
+                this.attachRemoteStreamToAudio();
+            };
+
+            // Запрашиваем доступ к микрофону
+            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log("localStream tracks:", this.localStream.getTracks());
+
+            // Добавляем треки в peerConnection
+            this.localStream.getTracks().forEach((track) => {
+                console.log("Adding local track:", track);
+                this.peerConnection?.addTrack(track, this.localStream!);
+            });
+
+            // Создаём SDP offer
+            const offer = await this.peerConnection.createOffer();
+            console.log("SDP Offer:", offer);
+            await this.peerConnection.setLocalDescription(offer);
+
+            // Отправляем запрос на звонок через SignalR
+            await this.connection.invoke("CallUser", {
+                CallerId: callerId,
+                TargetId: targetId,
+            });
+
+            console.log("Call initiated");
+        } catch (error) {
+            console.error("Error making call:", error);
+        }
+    };
+
+    acceptCall = async (callerId: string) => {
+        if (!this.connection) {
+            console.error("SignalR connection not established");
+            return;
+        }
+
+        try {
+            // Создаём peerConnection
+            this.peerConnection = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            });
+
+            // Обработчик ICE кандидатов
+            this.peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log("ICE Candidate:", event.candidate);
+                    this.connection?.invoke("SendIceCandidate", callerId, JSON.stringify(event.candidate));
+                }
+            };
+
+            // Обработчик добавления удалённого потока
+            this.peerConnection.ontrack = (event) => {
+                console.log("ontrack triggered", event);
+                if (!this.remoteStream) {
+                    this.remoteStream = new MediaStream();
+                }
+                this.remoteStream.addTrack(event.track);
+                console.log("Remote track added:", event.track);
+                console.log("remoteStream tracks:", this.remoteStream.getTracks());
+                this.attachRemoteStreamToAudio();
+            };
+
+            this.peerConnection.onconnectionstatechange = () => {
+                console.log("ICE connection state:", this.peerConnection?.connectionState);
+            };
+            console.log("remoteStream audio tracks:", this.remoteStream?.getAudioTracks());
+
+            // Запрашиваем доступ к микрофону
+            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log("localStream tracks:", this.localStream.getTracks());
+
+            // Добавляем треки в peerConnection
+            this.localStream.getTracks().forEach((track) => {
+                console.log("Adding local track:", track);
+                this.peerConnection?.addTrack(track, this.localStream!);
+            });
+
+            // Отправляем SDP answer
+            await this.connection.invoke("AcceptCall", callerId);
+
+            runInAction(() => {
+                this.isInCall = true;
+                this.currentCall = null;
+            });
+
+            console.log("Call accepted");
+        } catch (error) {
+            console.error("Error accepting call:", error);
+        }
+    };
+
+
+    declineCall = async (callerId: string) => {
+        if (!this.connection) {
+            console.error("SignalR connection not established");
+            return;
+        }
+
+        try {
+            await this.connection.invoke("DeclineCall", callerId);
+
+            runInAction(() => {
+                this.currentCall = null; 
+                this.isRinging = false; 
+            });
+
+            console.log("Call declined");
+        } catch (error) {
+            console.error("Error declining call:", error);
+        }
+    };
+    endCall = async (targetId: string) => {
+        if (!this.connection) {
+            console.error("SignalR connection not established");
+            return;
+        }
+
+        try {
+            await this.connection.invoke("EndCall", targetId);
+            if (this.peerConnection) {
+                this.peerConnection.close();
+                this.peerConnection = null;
+            }
+
+            this.localStream?.getTracks().forEach((track) => track.stop());
+            this.localStream = null;
+            this.remoteStream = null;
+
+            runInAction(() => {
+                this.isInCall = false;
+                this.currentCall = null;
+            });
+
+            console.log("Call ended");
+        } catch (error) {
+            console.error("Error ending call:", error);
+        }
+    };
+    handleReceiveSDP = async (sdp: string) => {
+        if (!this.peerConnection) {
+            this.peerConnection = new RTCPeerConnection();
+
+            this.peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    this.connection?.invoke("SendIceCandidate", this.currentCall?.targetId || "", JSON.stringify(event.candidate));
+                }
+            };
+            this.peerConnection.ontrack = (event) => {
+                if (!this.remoteStream) {
+                    this.remoteStream = new MediaStream();
+                }
+                this.remoteStream.addTrack(event.track);
+                this.attachRemoteStreamToAudio();
+                console.log("Remote track added:", event.track);
+            };
+            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.localStream.getTracks().forEach((track) => {
+                this.peerConnection?.addTrack(track, this.localStream!);
+            });
+        }
+
+        const description = new RTCSessionDescription(JSON.parse(sdp));
+        await this.peerConnection.setRemoteDescription(description);
+        while (this.iceCandidateBuffer.length > 0) {
+            const candidate = this.iceCandidateBuffer.shift();
+            if (candidate) {
+                await this.peerConnection.addIceCandidate(candidate);
+            }
+        }
+
+        if (description.type === "offer") {
+            const answer = await this.peerConnection.createAnswer();
+            await this.peerConnection.setLocalDescription(answer);
+            await this.connection?.invoke("SendSDP", this.currentCall?.callerId || "", JSON.stringify(answer));
+        }
+    };
+
+    handleReceiveIceCandidate = async (candidate: string) => {
+        const iceCandidate = new RTCIceCandidate(JSON.parse(candidate));
+
+        if (this.peerConnection) {
+            if (this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
+                await this.peerConnection.addIceCandidate(iceCandidate);
+            } else {
+                this.iceCandidateBuffer.push(iceCandidate);
+            }
+        }
+    };
+
+    setAudioElement = (element: HTMLAudioElement) => {
+        this.audioElement = element;
+    }
+    private attachRemoteStreamToAudio() {
+        console.log("attachRemoteStreamToAudio called");
+        console.log("Audio element:", this.audioElement);
+        console.log("Remote stream:", this.remoteStream);
+
+        if (this.audioElement && this.remoteStream) {
+            this.audioElement.srcObject = this.remoteStream;
+            this.audioElement.play().catch((error) => {
+                console.error("Error playing audio:", error);
+            });
+        } else {
+            console.error("Audio element or remote stream is not available");
+        }
+    }
+
 }
