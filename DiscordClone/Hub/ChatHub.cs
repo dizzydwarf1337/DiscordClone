@@ -53,6 +53,24 @@ namespace DiscordClone.Hubs
             var connectionId = Context.ConnectionId;
             await Groups.RemoveFromGroupAsync(connectionId, groupName);
         }
+        public async Task SendNotification(string userId, string type, object payload)
+        {
+            var notification = new NotificationDto
+            {
+                ReceiversId = new List<Guid> { Guid.Parse(userId) },
+                Type = type,
+                Payload = payload
+            };
+            
+            if (_userConnections.TryGetValue(userId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("ReceiveNotification", notification);
+            }
+            else
+            {
+                Console.WriteLine("User not connected");
+            }
+        }
         public async Task SendPrivateMessage(PrivateMessageDto privateMessageDto)
         {
             await Clients.User(privateMessageDto.SenderId.ToString())
@@ -67,6 +85,11 @@ namespace DiscordClone.Hubs
             {
                 Console.WriteLine("Receiver not connected");
             }
+        }
+
+        public async Task SendGroupMessage(GroupMessageDto groupMessageDto)
+        {
+            await Clients.Group($"{groupMessageDto.GroupId}").SendAsync("ReceiveGroupMessage", groupMessageDto);
         }
         public async Task SendMessage(MessageDto messageDto, string groupName)
         {

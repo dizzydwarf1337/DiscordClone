@@ -40,5 +40,7 @@ namespace DiscordClone.Models
 
         // Collection of activity logs for the user
         public ICollection<UserActivityLog>? ActivityLogs { get; set; }
+
+        public ICollection<FriendGroup> FriendGroups { get; set; } = new List<FriendGroup>();
     }
 }

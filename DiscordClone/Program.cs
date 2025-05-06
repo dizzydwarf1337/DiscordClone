@@ -25,6 +25,7 @@ builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>(
 builder.Services.AddScoped<IChannelOperationsService, ChannelOperationsService>();
 builder.Services.AddScoped<ServerOperationsService>();
 builder.Services.AddScoped<MessageService>();
+builder.Services.AddScoped<NotificationService>();
 builder.Services.AddSingleton<ChatHub>();
 builder.Services.AddIdentity<User, IdentityRole<Guid>>(options => options.SignIn.RequireConfirmedAccount = false)
         .AddEntityFrameworkStores<ApplicationContext>()
@@ -89,7 +90,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-
+    
     string[] roleNames = { "Admin", "User" };
     foreach (var roleName in roleNames)
     {

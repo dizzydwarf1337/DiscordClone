@@ -16,7 +16,8 @@ export default observer(function ChannelProfile() {
         const loadMessages = async () => {
             const messages = await channelStore.getMessagesFromLastDaysApi(channelIdParam!, page);
             runInAction(() => {
-                signalRStore.messages.set(channelIdParam!, messages);
+                const sortedMessages = messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                signalRStore.messages.set(channelIdParam!, sortedMessages);
             });
         };
         loadMessages();

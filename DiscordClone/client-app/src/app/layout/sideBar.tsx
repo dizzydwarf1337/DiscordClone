@@ -4,19 +4,20 @@ import { useEffect, useState } from "react";
 import { observer } from "mobx-react-lite";
 import JoinServerDialog from "../../features/User/server/joinServerDialog";
 import FriendRequestsDialog from "../../features/User/friends/friendRequestsDialog";
-import { Drawer, Box, Typography } from "@mui/material";
+import { Drawer, Box, Typography, Button } from "@mui/material";
+import { CreateGroupDialog } from "../../features/User/groups/CreateGroupDialog"; // Assuming you will create this component
 
 export default observer(function SideBar() {
     const { userStore, serverStore, friendStore } = useStore();
     
     const [openServer, setOpenServer] = useState<boolean>(false);
     const [openFriends, setOpenFriends] = useState<boolean>(false);
+    const [openCreateGroup, setOpenCreateGroup] = useState<boolean>(false); // State to control the dialog for creating a group
+
     useEffect(() => {
         if (serverStore.servers.length === 0)
             serverStore.getServersApi(userStore.user!.id).then();
-
-    }, [userStore,serverStore]);
-
+    }, [userStore, serverStore]);
 
     return (
         <>
@@ -46,10 +47,11 @@ export default observer(function SideBar() {
                                 </Link>
                             )))}
                     </Box>
+
                     <Box position="relative" display="flex" flexDirection="column" gap="10px">
                         <Box sx={{
                             borderRadius: "20px", height: "50px", width: "50px", fontSize: "10px", display: "flex",
-                            alignItems: "center", justifyContent: "center", color: "black", textAlign:"center",
+                            alignItems: "center", justifyContent: "center", color: "black", textAlign: "center",
                             cursor: "pointer", backgroundColor: "lightgray",
                         }}
                             onClick={() => setOpenFriends(true)}
@@ -78,12 +80,28 @@ export default observer(function SideBar() {
                         >
                             Servers
                         </Box>
+
+                        {/* Create Group Button */}
+                        <Box sx={{
+                            borderRadius: "20px", height: "50px", width: "50px", fontSize: "10px", display: "flex",
+                            alignItems: "center", justifyContent: "center", color: "black",
+                            cursor: "pointer", backgroundColor: "lightgray", textAlign: "center"
+                        }}
+                            onClick={() => setOpenCreateGroup(true)}
+                        >
+                            Create Group
+                        </Box>
+
                     </Box>
                 </Box>
             </Drawer>
+
             <JoinServerDialog open={openServer} onClose={() => setOpenServer(false)} />
             <FriendRequestsDialog open={openFriends} onClose={() => setOpenFriends(false)} />
             
+            {/* Create Group Dialog - Assuming you've created this component */}
+            <CreateGroupDialog open={openCreateGroup} onClose={() => setOpenCreateGroup(false)} />
+
         </>
     );
 });

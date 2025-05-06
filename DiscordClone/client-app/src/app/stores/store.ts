@@ -13,12 +13,15 @@ interface Store {
     friendStore: FriendStore,
 }
 
+const friendStore = new FriendStore();
+const signalRStore = new SignalRStore(friendStore);
+
 export const store: Store = {
     userStore: new UserStore(),
-    signalRStore: new SignalRStore(),
+    signalRStore,
     serverStore: new ServerStore(),
     channelStore: new ChannelStore(),
-    friendStore: new FriendStore(),
+    friendStore
 }
 
 export const StoreContext = createContext(store);

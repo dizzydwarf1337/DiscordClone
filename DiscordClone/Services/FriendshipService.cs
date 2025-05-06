@@ -1,17 +1,21 @@
 ﻿using DiscordClone.Db;
 using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
+using DiscordClone.Services;
 using DiscordClone.Utils;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 public class FriendshipService
 {
     private readonly ApplicationContext _context;
     private readonly ILogger<FriendshipService> _logger;
-    public FriendshipService(ApplicationContext context, ILogger<FriendshipService> logger)
+    private readonly NotificationService _notificattionService;
+    public FriendshipService(ApplicationContext context, ILogger<FriendshipService> logger, NotificationService notificattionService)
     {
         _context = context;
         _logger = logger;
+        _notificattionService = notificattionService;
     }
 
     // Wysyłanie zaproszenia do przyjaźni
@@ -36,6 +40,16 @@ public class FriendshipService
         _context.Friendships.Add(friendship);
         await _context.SaveChangesAsync();
 
+                var notification = new NotificationDto
+        {
+            ReceiversId = new List<Guid> { receiverId },
+            Type = "ReceivedFriendRequest",
+            Payload = new {
+                hello = "hello",
+            }
+        };
+        await _notificattionService.SendNotification(notification);
+
         return Result<bool>.Success(true);
     }
     public async Task<Result<bool>> SendFriendRequestByUserName(FriendsUsernameRequestDto friendsUsernameRequest)
@@ -49,7 +63,7 @@ public class FriendshipService
         }
         _logger.LogInformation("Found user: ReceiverId={ReceiverId}, SenderId={SenderId}",
         user.Id, friendsUsernameRequest.senderId);
-        var friendshipRequest = await _context.Friendships.FirstOrDefaultAsync(x => (x.SenderId == friendsUsernameRequest.senderId && x.ReceiverId == user.Id) || (x.ReceiverId == friendsUsernameRequest.senderId && x.SenderId== user.Id));
+        var friendshipRequest = await _context.Friendships.FirstOrDefaultAsync(x => (x.SenderId == friendsUsernameRequest.senderId && x.ReceiverId == user.Id) || (x.ReceiverId == friendsUsernameRequest.senderId && x.SenderId == user.Id));
         if (friendshipRequest != null)
         {
             return Result<bool>.Failure("Friendship request already exists");
@@ -62,6 +76,17 @@ public class FriendshipService
         };
         await _context.Friendships.AddAsync(friendship);
         await _context.SaveChangesAsync();
+
+        var notification = new NotificationDto
+        {
+            ReceiversId = new List<Guid> { user.Id },
+            Type = "ReceivedFriendRequest",
+            Payload = new {
+                hello = "hello",
+            }
+        };
+        await _notificattionService.SendNotification(notification);
+
         return Result<bool>.Success(true);
     }
     // Akceptowanie zaproszenia do przyjaźni
@@ -79,7 +104,17 @@ public class FriendshipService
         friendship.AcceptedAt = DateTime.UtcNow;
         _context.Friendships.Update(friendship);
         await _context.SaveChangesAsync();
-
+        var notification = new NotificationDto
+        {
+            ReceiversId = new List<Guid> { senderId, receiverId },
+            Type = "FriendRequestAccepted",
+            Payload = new
+            {
+                friendshipId = friendship.Id,
+                AcceptedBy = receiverId
+            }
+        };
+        await _notificattionService.SendNotification(notification);
         return Result<bool>.Success(true);
     }
 
@@ -96,18 +131,20 @@ public class FriendshipService
 
         friendship.Status = FriendshipStatus.Rejected;
 
+        
+        _context.Friendships.Remove(friendship);
         await _context.SaveChangesAsync();
 
         return Result<bool>.Success(true);
     }
     public async Task<Result<ICollection<FriendRequestDto>>> GetFriendsRequests(Guid userId)
     {
-        var requests = await _context.Friendships.Include(s=>s.Sender)
+        var requests = await _context.Friendships.Include(s => s.Sender)
             .Where(f => f.ReceiverId == userId && f.Status == FriendshipStatus.Pending)
             .ToListAsync();
         var requestDtos = requests.Select(r => new FriendRequestDto
         {
-            requestId= r.Id,
+            requestId = r.Id,
             SenderId = r.SenderId,
             ReceiverId = r.ReceiverId,
             UserName = r.Sender.UserName,
@@ -144,4 +181,391 @@ public class FriendshipService
         _logger.LogInformation("Friends: {Friends}", friendsDto);
         return Result<ICollection<UserDto>>.Success(friendsDto);
     }
+
+    public async Task<Result<ICollection<FriendGroupDto>>> GetFriendGroupsById(Guid userId)
+    {
+        _logger.LogInformation("Getting friend groups for user: {UserId}", userId);
+
+        // Fetching friend groups where the user is either the creator or a member
+        var groups = await _context.FriendGroups
+            .Where(g => g.CreatorId == userId || g.Members.Any(m => m.Id == userId))
+            .Include(g => g.Members)  // Load the members of each group
+            .ToListAsync();
+
+        // Mapping the result to DTOs
+        var groupDtos = groups.Select(g => new FriendGroupDto
+        {
+            Id = g.Id,
+            Name = g.Name,
+            CreatorId = g.CreatorId,
+            Members = g.Members.Select(m => new UserDto
+            {
+                Id = m.Id.ToString(),
+                Username = m.UserName,
+                Image = m.AvatarUrl
+            }).ToList()
+        }).ToList();
+
+        _logger.LogInformation("Found {GroupCount} friend groups for user: {UserId}", groups.Count, userId);
+
+        return Result<ICollection<FriendGroupDto>>.Success(groupDtos);
+    }
+
+    // Creating a new Friend Group
+    public async Task<Result<FriendGroupDto>> CreateGroupAsync(Guid creatorId, string groupName)
+    {
+        _logger.LogInformation("Creating new group by user: {CreatorId}", creatorId);
+
+        // Check if the user exists
+        var user = await _context.Users.FindAsync(creatorId);
+        if (user == null)
+        {
+            return Result<FriendGroupDto>.Failure("User not found.");
+        }
+
+        // Create a new group
+        var group = new FriendGroup
+        {
+            Id = Guid.NewGuid(), // Generating a new unique group ID
+            Name = groupName,
+            CreatorId = creatorId,
+            Members = new List<User> { user } // Initially add the creator as the first member
+        };
+
+        // Add the group to the context
+        _context.FriendGroups.Add(group);
+
+        // Save the changes to the database
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("New group created with creator: {CreatorId} groupId: {GroupId}", creatorId, group.Id);
+
+        // Return a DTO with the created group
+        var groupDto = new FriendGroupDto
+        {
+            Id = group.Id,
+            Name = group.Name,
+            CreatorId = group.CreatorId,
+            Members = new List<UserDto>
+            {
+                new UserDto
+                {
+                    Id = user.Id.ToString(),
+                    Username = user.UserName,
+                    Image = user.AvatarUrl
+                }
+            }
+        };
+
+        return Result<FriendGroupDto>.Success(groupDto);
+    }
+
+    // Retrieving Members of a Friend Group
+    public async Task<Result<List<UserDto>>> GetGroupMembersAsync(Guid groupId)
+    {
+        _logger.LogInformation("Fetching members for group: {GroupId}", groupId);
+
+        var group = await _context.FriendGroups
+            .Include(g => g.Members) 
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null)
+        {
+            return Result<List<UserDto>>.Failure("Group not found.");
+        }
+
+        var groupMembers = group.Members.Select(m => new UserDto
+        {
+            Id = m.Id.ToString(),
+            Username = m.UserName,
+            Image = m.AvatarUrl
+        }).ToList();
+
+        _logger.LogInformation("Fetched {MemberCount} members for group: {GroupId}", groupMembers.Count, groupId);
+
+        return Result<List<UserDto>>.Success(groupMembers);
+    }
+    // Adding a User to a Friend Group
+    public async Task<Result<bool>> AddUserToGroupAsync(Guid userId, Guid groupId)
+    {
+        _logger.LogInformation("Adding user: {UserId} to group: {GroupId}", userId, groupId);
+
+        var group = await _context.FriendGroups
+            .Include(g => g.Members)
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+
+        if (group == null)
+        {
+            return Result<bool>.Failure("Group not found.");
+        }
+
+        // Check if the user is already a member
+        if (group.Members.Any(m => m.Id == userId))
+        {
+            return Result<bool>.Failure("User is already a member of this group.");
+        }
+
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return Result<bool>.Failure("User not found.");
+        }
+
+        group.Members.Add(user);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("User: {UserId} added to group: {GroupId}", userId, groupId);
+
+        var notification = new NotificationDto
+        {
+            ReceiversId = new List<Guid> { userId },
+            Type = "AddedToGroup",
+            Payload = new
+            {
+                GroupId = groupId,
+                GroupName = group.Name,
+                AddedBy = userId
+            }
+        };
+        await _notificattionService.SendNotification(notification);
+        
+        return Result<bool>.Success(true);
+    }
+
+    public async Task<Result<bool>> UpdateGroupName(UpdateGroupNameDto updateGroupDto)
+    {
+        try
+        {
+            // Retrieve the group from the database by its GroupId
+            var group = await _context.FriendGroups
+                .FirstOrDefaultAsync(g => g.Id == updateGroupDto.GroupId);
+
+            if (group == null)
+            {
+                return Result<bool>.Failure("Group not found.");
+            }
+
+            // Update the group's name
+            group.Name = updateGroupDto.GroupName;
+
+            // Save the changes to the database
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Group name updated successfully for group: {GroupId}", updateGroupDto.GroupId);
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating group name for group: {GroupId}", updateGroupDto.GroupId);
+            return Result<bool>.Failure("An error occurred while updating the group name.");
+        }
+    }
+    public async Task<Result<string>> RemoveGroupAsync(Guid groupId)
+    {
+        _logger.LogInformation("Removing group: {GroupId}", groupId);
+
+        try
+        {
+            // Separate the database operation from notification sending
+            var (success, membersId, groupName) = await RemoveGroupFromDatabase(groupId);
+            
+            if (!success)
+            {
+                return Result<string>.Failure("Group not found.");
+            }
+
+            // Send notification after successful DB operation
+            if (membersId.Any())
+            {
+                await SendGroupRemovalNotification(membersId, groupId, groupName);
+            }
+
+            _logger.LogInformation("Group: {GroupId} removed successfully", groupId);
+            return Result<string>.Success("Group deleted successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing group {GroupId}", groupId);
+            return Result<string>.Failure(ex.InnerException?.Message ?? "Error removing group");
+        }
+    }
+
+    private async Task<(bool success, List<Guid> membersId, string groupName)> RemoveGroupFromDatabase(Guid groupId)
+    {
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var group = await _context.FriendGroups
+                .Include(g => g.Members)
+                .FirstOrDefaultAsync(g => g.Id == groupId);
+
+            if (group == null)
+            {
+                return (false, null, null);
+            }
+
+            var membersId = group.Members.Select(m => m.Id).ToList();
+            var groupName = group.Name;
+
+            var messages = await _context.GroupMessages
+                .Include(m => m.ReadBy) 
+                .Include(m => m.Reactions) 
+                .Where(m => m.GroupId == groupId)
+                .ToListAsync();
+
+            foreach (var message in messages)
+            {
+                if (message.ReadBy != null)
+                {
+                    message.ReadBy.Clear();
+                }
+                if (message.Reactions != null)
+                {
+                    message.Reactions.Clear();
+                }
+            }
+
+            _context.GroupMessages.RemoveRange(messages);
+
+            group.Members.Clear();
+            
+            await _context.SaveChangesAsync();
+
+            _context.FriendGroups.Remove(group);
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+            return (true, membersId, groupName);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error removing group {GroupId}", groupId);
+            throw;
+        }
+    }
+
+    private async Task SendGroupRemovalNotification(List<Guid> membersId, Guid groupId, string groupName)
+    {
+        try
+        {
+            var notification = new NotificationDto
+            {
+                ReceiversId = membersId,
+                Type = "KickedFromGroup",
+                Payload = new
+                {
+                    GroupId = groupId,
+                    GroupName = groupName
+                }
+            };
+            await _notificattionService.SendNotification(notification);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending notifications for group removal {GroupId}", groupId);
+            // Notification failures shouldn't fail the whole operation
+        }
+    }
+
+    public async Task<Result<bool>> RemoveUserFromGroupAsync(Guid userId, Guid groupId)
+    {
+        _logger.LogInformation("Removing user: {UserId} from group: {GroupId}", userId, groupId);
+
+        try
+        {
+            var isCreator = await _context.FriendGroups
+                .AnyAsync(g => g.Id == groupId && g.CreatorId == userId);
+
+            if (isCreator)
+            {
+                return Result<bool>.Failure("Cannot remove the creator from the group.");
+            }
+
+            var group = await _context.FriendGroups
+                .Include(g => g.Members)
+                .FirstOrDefaultAsync(g => g.Id == groupId);
+
+            if (group == null)
+            {
+                return Result<bool>.Failure("Group not found.");
+            }
+
+            var user = group.Members.FirstOrDefault(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return Result<bool>.Failure("User is not a member of this group.");
+            }
+
+            group.Members.Remove(user);
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("User: {UserId} removed from group: {GroupId}", userId, groupId);
+            var notification = new NotificationDto
+            {
+                ReceiversId = new List<Guid> { userId },
+                Type = "KickedFromGroup",
+                Payload = new
+                {
+                    GroupId = groupId,
+                    GroupName = group.Name,
+                    RemovedBy = userId
+                }
+            };
+            await _notificattionService.SendNotification(notification);
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing user {UserId} from group {GroupId}", userId, groupId);
+            return Result<bool>.Failure(ex.InnerException?.Message ?? "Error removing user from group");
+        }
+    }
+    public async Task<Result<bool>> RemoveFriendAsync(Guid userId, Guid friendId)
+    {
+        _logger.LogInformation("Removing friendship between user: {UserId} and friend: {FriendId}", userId, friendId);
+
+        try
+        {
+            var friendship = await _context.Friendships
+                .FirstOrDefaultAsync(f => 
+                    (f.SenderId == userId && f.ReceiverId == friendId && f.Status == FriendshipStatus.Accepted) ||
+                    (f.SenderId == friendId && f.ReceiverId == userId && f.Status == FriendshipStatus.Accepted));
+
+            if (friendship == null)
+            {
+                return Result<bool>.Failure("Friendship not found.");
+            }
+
+            _context.Friendships.Remove(friendship);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Friendship removed successfully between user: {UserId} and friend: {FriendId}", userId, friendId);
+
+            var notification = new NotificationDto
+            {
+                ReceiversId = new List<Guid> { userId, friendId },
+                Type = "FriendRemoved",
+                Payload = new
+                {
+                    RemovedId = userId,
+                    RemovedFriendId = friendId
+                }
+            };
+            await _notificattionService.SendNotification(notification);
+
+            return Result<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing friendship between user: {UserId} and friend: {FriendId}", userId, friendId);
+            return Result<bool>.Failure("An error occurred while removing the friendship.");
+        }
+    }
+
+
 }

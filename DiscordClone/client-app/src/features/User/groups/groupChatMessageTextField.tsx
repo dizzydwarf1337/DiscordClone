@@ -4,43 +4,31 @@ import { useStore } from "../../../app/stores/store";
 import { v4 as uuidv4 } from 'uuid';
 import { observer } from "mobx-react-lite";
 import { useParams } from "react-router-dom";
-import PrivateMessage from "../../../app/Models/PrivateMessage";
+import GroupMessage from "../../../app/Models/GroupMessage";
 import SendIcon from '@mui/icons-material/Send';
-
-interface Props {
-    onSend?: () => void;
-}
-
-export default observer(function PrivateMessageTextField({ onSend }: Props) {
+export default observer(function GroupChatMessageTextField() {
     const { signalRStore, userStore } = useStore();
     const [content, setContent] = useState("");
-    const { friendId } = useParams();
-    
+    const { groupId } = useParams();
     const handleMessageChange = (e: ChangeEvent<HTMLInputElement>) => {
         setContent(e.target.value);
     };
-
-    useEffect(() => { }, [signalRStore]);
+    useEffect(() => { },[signalRStore])
 
     const handleSend = async () => {
         if (!content.trim()) return;
 
-        const message: PrivateMessage = {
+        const message: GroupMessage = {
             messageId: uuidv4(),
             senderId: userStore.user!.id,
             sentAt: new Date(),
             content: content.trim(),
-            receiverId: friendId!,
+            groupId: groupId!,
         };
-        
         try {
-            await signalRStore.sendPrivateMessage(message);
+            await signalRStore.sendGroupMessage(message);
             setContent("");
-            
-            // Call the onSend callback if provided
-            if (onSend) {
-                onSend();
-            }
+
         } catch (error) {
             console.error("Failed to send message:", error);
         }
