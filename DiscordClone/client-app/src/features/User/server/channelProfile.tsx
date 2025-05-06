@@ -32,7 +32,7 @@ export default observer(function ChannelProfile() {
 
     useEffect(() => {
         loadMessages();
-    }, [channelIdParam, page, channelStore, signalRStore.messages]);
+    }, [channelIdParam, page, channelStore, signalRStore.messages, signalRStore.refreshChannelMessages]);
 
     return (
         <Box display="flex" flexDirection="column" width="100%" gap="10px" sx={{ m: "20px 10px 20px 10px" }}>

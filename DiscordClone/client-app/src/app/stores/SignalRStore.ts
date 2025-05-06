@@ -25,6 +25,7 @@ export default class SignalRStore {
     friendStore: FriendStore;
     unreadPrivateMessages = new Map<string, number>();
     unreadGroupMessages = new Map<string, number>();
+    refreshChannelMessages = 0;
 
     constructor(friendStore: FriendStore) {
         makeAutoObservable(this);
@@ -369,6 +370,9 @@ export default class SignalRStore {
                     window.location.href = "/main";
                 }
                 await this.refreshFriends();
+                break;
+            case "ChannelMessageWithAttachment":
+                this.refreshChannelMessages++;
                 break;
         }
     };
