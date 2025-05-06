@@ -1,3 +1,4 @@
+
 import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import { action, makeAutoObservable, runInAction } from "mobx";
 import Message from "../Models/message";
@@ -192,6 +193,7 @@ export default class SignalRStore {
         }
         try {
             await agent.Messages.SendMessage(message);
+
             console.log("Message sent");
         } catch (error) {
             console.error("Error sending message:", error);
@@ -272,7 +274,6 @@ export default class SignalRStore {
             console.error("Error initializing unread counts:", error);
         }
     }
-
     refreshFriendGroups = async () => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const userId = user.id;
@@ -293,6 +294,11 @@ export default class SignalRStore {
         }
     };
 
+    handleReceiveNotification = (notification: NotificationDto) => {
+        console.log("🔔 Notification received:", notification);
+        switch (notification.type) {
+            case "NewPrivateMessage":
+                console.log("New private message notification:", notification);
     refreshFriends = async () => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const userId = user.id;
@@ -344,13 +350,14 @@ export default class SignalRStore {
                 console.log("❌ You were kicked from the group:", notification.payload.groupId);
                 if (typeof notification.payload === 'object' && notification.payload !== null && 'groupId' in notification.payload) {
                     const groupId = notification.payload.groupId;        
+
                     this.refreshFriendGroups();
                     if (window.location.pathname.includes(`/main/group/${groupId}`)) {
                         window.location.href = "/main";
                     }
                 }
                 break;
-            case "ReceivedFriendRequest":
+           case "ReceivedFriendRequest":
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const friendRequests = await this.friendStore.GetUserFriendRequestsById(user.id);
                 console.log("Friend requests:", friendRequests);
@@ -371,10 +378,37 @@ export default class SignalRStore {
         }
     };
 
+      sendMessageWithAttachments = async (content: string, channelId: string, senderId: string, files: FileList | null): Promise<Message | null> => {
+        if (!this.connection) {
+            console.error("Not connected");
+            return null;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('content', content);
+            formData.append('channelId', channelId);
+            formData.append('senderId', senderId);
+
+            if (files && files.length > 0) {
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files', files[i]);
+                }
+            }
+
+            const response = await agent.Messages.SendMessageWithAttachments(formData);
+            return response; // Zakładając, że API zwraca obiekt Message
+        } catch (error) {
+            console.error("Error sending message with attachments:", error);
+            return null;
+        }
+    };
+
     handleReceiveMessage = (message: Message) => {
         runInAction(() => {
             const currentMessages = this.messages.get(message.channelId) || [];
             this.messages.set(message.channelId, [...currentMessages, message]);
+            console.log("Message received with attachments:", message.attachments?.length || 0);
         });
     };
     handleReceivePrivateMessage = (message: PrivateMessage) => {

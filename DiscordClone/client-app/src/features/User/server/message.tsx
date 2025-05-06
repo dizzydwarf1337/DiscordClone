@@ -4,6 +4,13 @@ import SentimentSatisfiedAltIcon from "@mui/icons-material/SentimentSatisfiedAlt
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
+import axios from "axios";
+
+export interface Attachment {
+    attachmentId: string;
+    url: string;
+    fileType: string;
+}
 
 export interface Props {
     message: {
@@ -12,50 +19,72 @@ export interface Props {
         createdAt: string;
         senderId: string;
         senderName: string;
+        channelId?: string;
         reactions: Array<{ userId: string; reactionType: string }>;
+        attachments?: Array<{
+            attachmentId: string;
+            attachmentUrl: string;
+            attachmentType: string;
+        }>;
     };
     userId: string;
 }
 
 const Message = ({ message, userId }: Props) => {
     const [showReactions, setShowReactions] = useState(false);
-    const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
     const [reactions, setReactions] = useState<string[]>([]);
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
 
     useEffect(() => {
-        // Set initial reactions from the message prop
+        // Set initial reactions
         setReactions(message.reactions.map((reaction) => reaction.reactionType));
+
+        // Set attachments from message prop
+        if (message.attachments && message.attachments.length > 0) {
+            setAttachments(
+                message.attachments.map((att) => ({
+                    attachmentId: att.attachmentId,
+                    url: `http://localhost:5000${att.attachmentUrl}`, // Prepend base URL
+                    fileType: att.attachmentType.toLowerCase(),
+                }))
+            );
+        }
     }, [message]);
 
     const handleReactionClick = async (reaction: string) => {
         try {
             const hasReacted = reactions.includes(reaction);
 
-            // **Natychmiastowa aktualizacja stanu lokalnie (optymistyczna aktualizacja)**
-            setReactions(prevReactions =>
+            // Optimistic update
+            setReactions((prevReactions) =>
                 hasReacted
-                    ? prevReactions.filter(r => r !== reaction) // Usuń reakcję lokalnie
-                    : [...prevReactions, reaction] // Dodaj reakcję lokalnie
+                    ? prevReactions.filter((r) => r !== reaction)
+                    : [...prevReactions, reaction]
             );
 
-            const response = await fetch(`http://localhost:5000/api/message/reaction/${hasReacted ? "remove" : "add"}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    MessageId: message.messageId,
-                    UserId: userId,
-                    ReactionType: reaction,
-                }),
-            });
+            const response = await fetch(
+                `http://localhost:5000/api/message/reaction/${hasReacted ? "remove" : "add"}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        MessageId: message.messageId,
+                        UserId: userId,
+                        ReactionType: reaction,
+                    }),
+                }
+            );
 
             if (!response.ok) {
                 throw new Error("Failed to update reaction");
             }
 
-            // Opcjonalnie: Pobierz odświeżone reakcje z serwera dla 100% zgodności
-            const updatedReactionsResponse = await fetch(`http://localhost:5000/api/message/${message.messageId}/reactions`);
+            // Optionally refresh reactions
+            const updatedReactionsResponse = await fetch(
+                `http://localhost:5000/api/message/${message.messageId}/reactions`
+            );
             if (updatedReactionsResponse.ok) {
                 const updatedReactions = await updatedReactionsResponse.json();
                 setReactions(updatedReactions);
@@ -67,22 +96,51 @@ const Message = ({ message, userId }: Props) => {
 
     const isMyMessage = message.senderId === userId;
 
+    const renderAttachment = (attachment: Attachment) => {
+        switch (attachment.fileType) {
+            case "image":
+                return (
+                    <Box
+                        component="img"
+                        src={attachment.url}
+                        alt="Attachment"
+                        sx={{ maxWidth: "100%", maxHeight: "200px", borderRadius: "8px", mt: 1 }}
+                    />
+                );
+            case "document":
+                return (
+                    <Box sx={{ mt: 1 }}>
+                        <Typography variant="body2" sx={{ color: "#e0e0e0" }}>
+                            <a href={attachment.url} target="_blank" rel="noopener noreferrer">
+                                Document
+                            </a>
+                        </Typography>
+                    </Box>
+                );
+            default:
+                return (
+                    <Box sx={{ mt: 1 }}>
+                        <Typography variant="body2" sx={{ color: "#e0e0e0" }}>
+                            <a href={attachment.url} download>
+                                Download File
+                            </a>
+                        </Typography>
+                    </Box>
+                );
+        }
+    };
+
     return (
         <Box
             display="flex"
             flexDirection="column"
             justifyContent="center"
-            //alignItems={isMyMessage ? "flex-end" : "flex-start"} // Wyrównaj wiadomości użytkownika do prawej
-            //border="solid #eee 1px"
             borderRadius="10px"
             onMouseEnter={() => setShowReactions(true)}
             onMouseLeave={() => setShowReactions(false)}
             sx={{
                 position: "relative",
-                //marginLeft: isMyMessage ? "auto" : "0", // Przesuń wiadomości użytkownika na prawo
-                //marginRight: isMyMessage ? "0" : "auto", // Przesuń wiadomości innych użytkowników na lewo
                 padding: "10px",
-                //maxWidth: "70%";
             }}
         >
             <Box display="flex" flexDirection="column">
@@ -94,38 +152,32 @@ const Message = ({ message, userId }: Props) => {
                 </Typography>
             </Box>
             <Box>
-                <Typography variant="body1" sx={{ color: "#e0e0e0", wordBreak: "break-word", whiteSpace: "pre-line" }}>
+                <Typography
+                    variant="body1"
+                    sx={{ color: "#e0e0e0", wordBreak: "break-word", whiteSpace: "pre-line" }}
+                >
                     {message.content}
                 </Typography>
             </Box>
 
-            {/* Display selected reaction 
-            {selectedReaction && (
-                <Box
-                    sx={{
-                        position: "absolute",
-                        top: "-10px",
-                        right: "10px",
-                        color: "#ff0",
-                        fontSize: "1.5rem",
-                    }}
-                >
-                    {selectedReaction}
+            {attachments.length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                    {attachments.map((attachment) => (
+                        <Box key={attachment.attachmentId}>{renderAttachment(attachment)}</Box>
+                    ))}
                 </Box>
-            )}*/}
+            )}
 
-            {/* Display reactions */}
             {reactions.length > 0 && (
                 <Box sx={{ display: "flex", justifyContent: "end", gap: "8px", paddingTop: "5px" }}>
                     {reactions.map((reaction, index) => (
                         <Typography key={index} variant="body2" sx={{ color: "#ff0", fontSize: "1.5rem" }}>
-                            {reaction} {/* Render the emoji */}
+                            {reaction}
                         </Typography>
                     ))}
                 </Box>
             )}
 
-            {/* Reaction buttons */}
             {showReactions && (
                 <Box
                     display="flex"

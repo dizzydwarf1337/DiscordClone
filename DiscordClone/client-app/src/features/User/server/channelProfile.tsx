@@ -12,7 +12,7 @@ export default observer(function ChannelProfile() {
     const { serverId, channelIdParam } = useParams();
     const [page, setPage] = useState<number>(1);
 
-    useEffect(() => {
+    /*useEffect(() => {
         const loadMessages = async () => {
             const messages = await channelStore.getMessagesFromLastDaysApi(channelIdParam!, page);
             runInAction(() => {
@@ -20,6 +20,17 @@ export default observer(function ChannelProfile() {
                 signalRStore.messages.set(channelIdParam!, sortedMessages);
             });
         };
+        loadMessages();
+    }, [channelIdParam, page, channelStore, signalRStore.messages]);*/
+
+    const loadMessages = async () => {
+        const messages = await channelStore.getMessagesFromLastDaysApi(channelIdParam!, page);
+        runInAction(() => {
+            signalRStore.messages.set(channelIdParam!, messages);
+        });
+    };
+
+    useEffect(() => {
         loadMessages();
     }, [channelIdParam, page, channelStore, signalRStore.messages]);
 
