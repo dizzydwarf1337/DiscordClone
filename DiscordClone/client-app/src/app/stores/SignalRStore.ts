@@ -294,11 +294,6 @@ export default class SignalRStore {
         }
     };
 
-    handleReceiveNotification = (notification: NotificationDto) => {
-        console.log("🔔 Notification received:", notification);
-        switch (notification.type) {
-            case "NewPrivateMessage":
-                console.log("New private message notification:", notification);
     refreshFriends = async () => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const userId = user.id;
