@@ -134,6 +134,19 @@ namespace DiscordClone.Controllers
                 {
                     string groupName = $"{server.ServerId}:{channelId}";
                     await _hubContext.Clients.Group(groupName).SendAsync("ReceiveMessage", messageDto);
+                    
+                    var ids = server.ServerMembers.Select(sm => sm.UserId).ToList();
+
+                    var notification = new NotificationDto
+                    {
+                        ReceiversId = ids,
+                        Type = "ChannelMessageWithAttachment",
+                        Payload = new 
+                        {
+                        }
+                    };
+
+                    await _notificationService.SendNotification(notification);
                 }
                 else
                 {
