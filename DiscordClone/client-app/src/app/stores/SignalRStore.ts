@@ -585,6 +585,9 @@ export default class SignalRStore {
             console.log("SDP Offer:", offer);
             await this.peerConnection.setLocalDescription(offer);
 
+            await this.connection.invoke("SendSDP", targetId, JSON.stringify(offer));
+            console.log("SDP Offer sent", JSON.stringify(offer));
+
             // Отправляем запрос на звонок через SignalR
             await this.connection.invoke("CallUser", {
                 CallerId: callerId,
