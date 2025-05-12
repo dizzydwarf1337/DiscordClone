@@ -9,6 +9,8 @@ import PrivateChatMessage from "./PrivateChatMessage";
 import PrivateMessageTextField from "./PrivateMessageTextField";
 import PrivateMessage from "../../../app/Models/PrivateMessage";
 
+import { Button } from "@mui/material"; // Импортируем кнопку
+
 export default observer(function FriendChatProfile() {
     const { userStore, signalRStore } = useStore();
     const { friendId } = useParams();
@@ -18,6 +20,18 @@ export default observer(function FriendChatProfile() {
     const [filteredMessages, setFilteredMessages] = useState<PrivateMessage[]>([]);
     const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
     const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+    const handleCall = async () => {
+        if (friendId) {
+            await signalRStore.makeCall(friendId);
+        }
+    };
+
+    const handleEndCall = async () => {
+        if (friendId) {
+            await signalRStore.endCall(friendId);
+        }
+    };
 
     useEffect(() => {
         const loadMessages = async () => {
@@ -78,7 +92,7 @@ export default observer(function FriendChatProfile() {
 
     return (
         <Box display="flex" flexDirection="column" height="90vh" width="100%" sx={{ overflow: "hidden" }}>
-            <Box sx={{ m: "10px" }}>
+            <Box sx={{ m: "10px", display: "flex", justifyContent: "space-between" }}>
                 <TextField
                     fullWidth
                     variant="outlined"
@@ -86,6 +100,25 @@ export default observer(function FriendChatProfile() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleCall}
+                    disabled={signalRStore.isInCall}
+                    sx={{ ml: 2 }}
+                >
+                    Call
+                </Button>
+                {signalRStore.isInCall && (
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={handleEndCall}
+                        sx={{ ml: 2 }}
+                    >
+                        Hang up
+                    </Button>
+                )}
             </Box>
 
             <Box
@@ -128,7 +161,7 @@ export default observer(function FriendChatProfile() {
             </Box>
 
             <Box sx={{ m: "10px" }}>
-                <PrivateMessageTextField 
+                <PrivateMessageTextField
                     onSend={() => {
                         // When sending a new message, enable auto-scroll
                         setShouldAutoScroll(true);

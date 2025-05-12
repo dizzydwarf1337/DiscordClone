@@ -1,11 +1,12 @@
 ﻿using DiscordClone.Models.Dtos;
 using Microsoft.AspNetCore.SignalR;
+using System.Collections.Concurrent;
 
 namespace DiscordClone.Hubs
 {
     public class ChatHub : Hub
     {
-        private readonly Dictionary<string, string> _userConnections = new Dictionary<string, string>();
+        private readonly ConcurrentDictionary<string, string> _userConnections = new ConcurrentDictionary<string, string>();
         public override async Task OnConnectedAsync()
         {
             var userId = Context.UserIdentifier; 
@@ -21,7 +22,7 @@ namespace DiscordClone.Hubs
             var userId = Context.UserIdentifier;
             if (userId != null)
             {
-                _userConnections.Remove(userId); 
+                _userConnections.TryRemove(userId, out _); 
             }
             await base.OnDisconnectedAsync(exception);
         }
@@ -94,6 +95,57 @@ namespace DiscordClone.Hubs
         public async Task SendMessage(MessageDto messageDto, string groupName)
         {
             await Clients.Group(groupName).SendAsync("ReceiveMessage", messageDto);
+        }
+        public async Task CallUser(CallUserDto callUserDto)
+        {
+            if (_userConnections.TryGetValue(callUserDto.TargetId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("ReceiveCall", callUserDto);
+            }
+            else
+            {
+                Console.WriteLine("Receiver not connected");
+            }
+        }
+
+        public async Task AcceptCall(string callerId)
+        {
+            if (_userConnections.TryGetValue(callerId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("CallAccepted", Context.UserIdentifier);
+            }
+        }
+
+        public async Task DeclineCall(string callerId)
+        {
+            if (_userConnections.TryGetValue(callerId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("CallDeclined", Context.UserIdentifier);
+            }
+        }
+        public async Task EndCall(string targetId)
+        {
+            if (_userConnections.TryGetValue(targetId, out var connectionId))
+            {
+                Console.WriteLine($"Ending call for target: {targetId}");
+                await Clients.Client(connectionId).SendAsync("CallEnded", Context.UserIdentifier);
+            }
+        }
+
+        public async Task SendSDP(string targetId, string sdp)
+        {
+            if (_userConnections.TryGetValue(targetId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("ReceiveSDP", sdp);
+            }
+        }
+
+        public async Task SendIceCandidate(string targetId, string candidate)
+        {
+            if (_userConnections.TryGetValue(targetId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("ReceiveIceCandidate", candidate);
+            }
         }
     }
 }
