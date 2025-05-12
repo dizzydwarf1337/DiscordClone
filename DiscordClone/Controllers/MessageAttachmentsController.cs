@@ -2,6 +2,7 @@
 using DiscordClone.Hubs;
 using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
+using DiscordClone.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -16,9 +17,11 @@ namespace DiscordClone.Controllers
         private const string UploadsFolder = "wwwroot/uploads";
         private readonly ApplicationContext _context;
         private readonly IHubContext<ChatHub> _hubContext;
+        private readonly NotificationService _notificationService;
 
-        public MessageAttachmentsController(ApplicationContext context, IHubContext<ChatHub> hubContext)
+        public MessageAttachmentsController(ApplicationContext context, IHubContext<ChatHub> hubContext, NotificationService notificationService)
         {
+            _notificationService = notificationService;
             _context = context;
             _hubContext = hubContext;
         }
