@@ -1,4 +1,3 @@
-
 import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import { action, makeAutoObservable, runInAction } from "mobx";
 import Message from "../Models/message";
@@ -154,12 +153,17 @@ export default class SignalRStore {
         this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
         this.connection.on("ReceiveGroupMessage", this.handleReceiveGroupMessage);
         this.connection.on("ReceiveNotification", this.handleReceiveNotification);
+        this.registerPrivateCallMethods();
+    }
+
+    private registerPrivateCallMethods () {
+        if (!this.connection) return;
         this.connection.on("ReceiveCall", (callUserDto) => {
-            console.log("ReceiveCall triggered:", callUserDto);
-            runInAction(() => {
-                this.currentCall = { callerId: callUserDto.callerId, targetId: callUserDto.targetId };
-            });
-            console.log("Updated currentCall:", this.currentCall);
+        console.log("ReceiveCall triggered:", callUserDto);
+        runInAction(() => {
+            this.currentCall = { callerId: callUserDto.callerId, targetId: callUserDto.targetId };
+        });
+        console.log("Updated currentCall:", this.currentCall);
         });
         this.connection.on("CallAccepted", (callerId) => {
             console.log("Call accepted by:", callerId);

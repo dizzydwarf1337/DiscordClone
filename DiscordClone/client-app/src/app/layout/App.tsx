@@ -59,7 +59,7 @@ export default observer (function App() {
                 )}
                 {signalRStore.currentCall && <IncomingCallModal />}
 
-                <audio  ref={audioRef} autoPlay controls style={{ margin: "100px" }} />
+                <audio  ref={audioRef} autoPlay controls style={{ display: "none", margin: "100px" }} />
             </>
         </ThemeProvider>
     );
