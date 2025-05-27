@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Mic, MicOff, CallEnd, VolumeUp, VolumeOff } from "@mui/icons-material";
 import { Box, Grid, IconButton, Typography, Paper, CircularProgress, Tooltip } from "@mui/material";
 import { useStore } from "../../../app/stores/store";
+import agent from "../../../app/API/agent";
+import { User } from "../../../app/Models/user";
 
 export default observer(function GroupCallSection() {
     const { callStore } = useStore();
@@ -72,6 +74,7 @@ export default observer(function GroupCallSection() {
     // Remote audio component with better error handling
     function RemoteAudio({ userId, stream }: { userId: string; stream: MediaStream }) {
         const audioRef = useRef<HTMLAudioElement>(null);
+        const [user, setUser] = useState<User | null>(null);
 
     useEffect(() => {
         const audio = audioRef.current;
@@ -88,6 +91,15 @@ export default observer(function GroupCallSection() {
                 return prev;
             });
         }
+        agent.Users.getUserById(userId).then(response => {
+        if (response.success) {
+                setUser(response.data);
+            }
+        }
+        ).catch(err => {
+            console.error(`Failed to fetch user ${userId}:`, err);
+            setUser(null);
+        });
     }, [stream, userId]);
 
         return (
@@ -105,7 +117,7 @@ export default observer(function GroupCallSection() {
                         style={{ width: "100%",/* display: "none"*/ }} // Hidden but still playing
                     />
                     <Typography variant="subtitle1" mt={1}>
-                        User {userId}
+                        {user ? user.username : "Unknown User"}
                     </Typography>
                     <Box sx={{ 
                         position: "absolute", 

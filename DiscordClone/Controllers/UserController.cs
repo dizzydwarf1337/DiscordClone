@@ -144,7 +144,6 @@ namespace DiscordClone.Controllers
 
         // Endpoint to get user details by ID
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin,User")] // Admins and Users can get user details
         public async Task<IActionResult> GetUser(string id)
         {
             try
