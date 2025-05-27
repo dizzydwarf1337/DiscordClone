@@ -9,6 +9,7 @@ export default class CallStore {
     } | null = null;
     public localStream: MediaStream | null = null;
     public remoteStreams: Map<string, MediaStream> = new Map();
+    private handlersRegistered = false;
 
     constructor(signalRStore: SignalRStore) {
       makeAutoObservable(this);
@@ -18,17 +19,27 @@ export default class CallStore {
     }
 
     private async waitForConnectionAndBindHandlers(retries = 10, delayMs = 500) {
-      for (let attempt = 0; attempt < retries; attempt++) {
-        if (this.signalRStore.connection) {
-          this.signalRStore.connection.on("webrtc-offer", this.handleOffer);
-          this.signalRStore.connection.on("webrtc-answer", this.handleAnswer);
-          this.signalRStore.connection.on("webrtc-ice-candidate", this.handleIceCandidate);
-          console.log("[CallStore] SignalR connection initialized and handlers bound");
-          return;
+        for (let attempt = 0; attempt < retries; attempt++) {
+            if (this.signalRStore.connection && !this.handlersRegistered) {
+                // Add error handling for handler binding
+                try {
+                    this.signalRStore.connection.off("webrtc-offer", this.handleOffer); // Remove old first
+                    this.signalRStore.connection.off("webrtc-answer", this.handleAnswer);
+                    this.signalRStore.connection.off("webrtc-ice-candidate", this.handleIceCandidate);
+                    
+                    this.signalRStore.connection.on("webrtc-offer", this.handleOffer);
+                    this.signalRStore.connection.on("webrtc-answer", this.handleAnswer);
+                    this.signalRStore.connection.on("webrtc-ice-candidate", this.handleIceCandidate);
+                    this.handlersRegistered = true;
+                    console.log("[CallStore] Handlers bound successfully");
+                    return;
+                } catch (err) {
+                    console.error("Error binding handlers:", err);
+                }
+            }
+            await this.sleep(delayMs);
         }
-        await this.sleep(delayMs);
-      }
-      console.error("SignalR connection is not initialized after retries");
+        console.error("SignalR connection is not initialized after retries");
     }
 
     private sleep(ms: number) {
@@ -65,6 +76,11 @@ export default class CallStore {
             return;
         }
 
+        if (!this.handlersRegistered) {
+            console.log("[CallStore] Handlers not registered, waiting for SignalR connection");
+            await this.waitForConnectionAndBindHandlers();
+        }
+
         await this.initLocalStream(); // Ensure local stream is initialized
         const participants = new Map<string, RTCPeerConnection>();
         const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -72,9 +88,13 @@ export default class CallStore {
         for (const participantId of participantIds) {
             if (participantId === user.id) continue; // Skip self
 
-            const pc = new RTCPeerConnection({
-                iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-            });
+          const pc = new RTCPeerConnection({
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" },
+                { urls: "stun:stun2.l.google.com:19302" },
+            ],
+          });
 
             // Add local tracks
             this.localStream?.getTracks().forEach(track => {
@@ -152,9 +172,12 @@ export default class CallStore {
             console.warn(`Already have a connection for ${from}`);
             return;
         }
-
         const pc = new RTCPeerConnection({
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" },
+                { urls: "stun:stun2.l.google.com:19302" },
+            ],
         });
 
         try {
@@ -235,16 +258,20 @@ export default class CallStore {
     };
 
     private handleIceCandidate = async ({ from, candidate, groupId }: { from: string, candidate: RTCIceCandidateInit, groupId: string }) => {
-        if (!this.currentCall || this.currentCall.groupId !== groupId) return;
+    if (!this.currentCall || this.currentCall.groupId !== groupId) return;
 
-        const pc = this.currentCall.participants.get(from);
-        if (pc && candidate) {
-            try {
-                await pc.addIceCandidate(new RTCIceCandidate(candidate));
-            } catch (e) {
-                console.error("Error adding ICE candidate:", e);
-            }
+    const pc = this.currentCall.participants.get(from);
+    if (pc && candidate) {
+        try {
+            await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            console.log(`Successfully added ICE candidate from ${from}`); // Add logging
+        } catch (e) {
+            console.error("Error adding ICE candidate:", e, candidate);
         }
+    } else {
+        console.warn(`No peer connection or candidate for ${from}`, candidate);
+    }
+
     };
 
     public async leaveCall() {

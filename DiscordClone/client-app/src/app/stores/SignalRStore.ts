@@ -33,6 +33,7 @@ export default class SignalRStore {
     isRinging: boolean = false;
     audioElement: HTMLAudioElement | null = null;
     refreshChannelMessages = 0;
+    handlersRegistered = false;
 
     constructor(friendStore: FriendStore) {
         makeAutoObservable(this);
@@ -153,13 +154,14 @@ export default class SignalRStore {
     }
 
     private registerHubMethods() {
-        if (!this.connection) return;
+        if (!this.connection || this.handlersRegistered) return;
 
         this.connection.on("ReceiveMessage", this.handleReceiveMessage);
         this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
         this.connection.on("ReceiveGroupMessage", this.handleReceiveGroupMessage);
         this.connection.on("ReceiveNotification", this.handleReceiveNotification);
         this.registerPrivateCallMethods();
+        this.handlersRegistered = true;
     }
 
     private registerPrivateCallMethods () {
