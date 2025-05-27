@@ -12,7 +12,7 @@ import GroupManagementDialog from "../groups/groupManagmentDialog";
 import { User } from "../../../app/Models/user";
 
 export default observer(function ChannelDashboard() {
-    const { userStore, friendStore, signalRStore } = useStore();
+    const { userStore, friendStore, signalRStore, callStore } = useStore();
     const navigate = useNavigate();
     const { friendId, groupId } = useParams();
     const [groupAnchorEl, setGroupAnchorEl] = useState<null | HTMLElement>(null);
@@ -149,9 +149,25 @@ export default observer(function ChannelDashboard() {
         }
     };
 
-    const handleStartCall = () => {
-        // Implement call functionality here
-        console.log("Starting call with", selectedFriend?.username);
+    const handleStartGroupCall = () => {
+        if (selectedGroup) {
+            if (selectedGroup.id) {
+                if (userStore.user) {
+                    const memberIds = selectedGroup.members
+                        .map(m => m.id)
+                        .filter(id => id !== userStore.user!.id);
+                    callStore.joinCall(selectedGroup.id, memberIds);
+                    console.log("Starting call with: ", selectedGroup.id, "and members: ", memberIds);
+                }
+            }
+        }
+        handleCloseGroupMenu();
+    };
+
+    const handleStartFriendCall = () => {
+        if (selectedFriend && userStore.user) {
+            callStore.joinCall(selectedFriend.id, [userStore.user.id, selectedFriend.id]);
+        }
         handleCloseFriendMenu();
     };
 
@@ -336,8 +352,14 @@ export default observer(function ChannelDashboard() {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-                {selectedGroup?.isOwner ? (
-                    [
+                {selectedGroup?.isOwner
+                    ? [
+                        <MenuItem key="call" onClick={handleStartGroupCall}>
+                            <ListItemIcon>
+                                <CallIcon fontSize="small" />
+                            </ListItemIcon>
+                            Call
+                        </MenuItem>,
                         <MenuItem key="edit" onClick={handleOpenEditDialog}>
                             <ListItemIcon>
                                 <EditIcon fontSize="small" />
@@ -351,14 +373,21 @@ export default observer(function ChannelDashboard() {
                             Delete
                         </MenuItem>
                     ]
-                ) : (
-                    <MenuItem key="leave" onClick={handleLeaveGroup}>
-                        <ListItemIcon>
-                            <ExitToAppIcon fontSize="small" />
-                        </ListItemIcon>
-                        Leave group
-                    </MenuItem>
-                )}
+                    : [
+                        <MenuItem key="call" onClick={handleStartGroupCall}>
+                            <ListItemIcon>
+                                <CallIcon fontSize="small" />
+                            </ListItemIcon>
+                            Call
+                        </MenuItem>,
+                        <MenuItem key="leave" onClick={handleLeaveGroup}>
+                            <ListItemIcon>
+                                <ExitToAppIcon fontSize="small" />
+                            </ListItemIcon>
+                            Leave group
+                        </MenuItem>
+                    ]
+                }
             </Menu>
 
             {/* Friend management menu */}
@@ -396,7 +425,7 @@ export default observer(function ChannelDashboard() {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-                <MenuItem onClick={handleStartCall}>
+                <MenuItem onClick={handleStartFriendCall}>
                     <ListItemIcon>
                         <CallIcon fontSize="small" />
                     </ListItemIcon>

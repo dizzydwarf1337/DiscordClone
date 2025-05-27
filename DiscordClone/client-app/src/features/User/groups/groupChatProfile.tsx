@@ -11,7 +11,7 @@ import GroupMembers from "./groupMembers";
 import GroupCallSection from "./groupCallSection";
 
 export default observer(function GroupChatProfile() {
-    const { userStore, signalRStore } = useStore();
+    const { userStore, signalRStore, callStore } = useStore();
     const { groupId } = useParams();
     const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
@@ -56,9 +56,11 @@ export default observer(function GroupChatProfile() {
         <>
             <Box display="flex" flexDirection="column" height="90vh" width="100%">
                 {/* Call Section */}
-                <Box sx={{ flexShrink: 0, height: "310px", borderBottom: "1px solid #333" }}>
-                    <GroupCallSection />
-                </Box>
+                {callStore.currentCall && callStore.currentCall.groupId == groupId && (
+                    <Box sx={{ flexShrink: 0, height: "310px", borderBottom: "1px solid #333" }}>
+                        <GroupCallSection />
+                    </Box>
+                )}
 
                 {/* Search */}
                 <Box sx={{ m: 2 }}>

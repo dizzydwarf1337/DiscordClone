@@ -5,14 +5,14 @@ import SignalRStore from "./SignalRStore";
 import { ServerStore } from './serverStore';
 import { ChannelStore } from "./channelStore";
 import FriendStore from "./friendStore";
-import GroupCallStore from "./GroupCallStore";
+import CallStore from "./CallStore";
 interface Store {
     userStore: UserStore,
     signalRStore: SignalRStore,
     serverStore: ServerStore,
     channelStore: ChannelStore,
     friendStore: FriendStore,
-    groupChatStore: GroupCallStore,
+    callStore: CallStore,
 }
 
 const friendStore = new FriendStore();
@@ -24,7 +24,7 @@ export const store: Store = {
     serverStore: new ServerStore(),
     channelStore: new ChannelStore(),
     friendStore,
-    groupChatStore: new GroupCallStore(signalRStore),
+    callStore: new CallStore(signalRStore),
 }
 
 export const StoreContext = createContext(store);

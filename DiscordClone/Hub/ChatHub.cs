@@ -9,7 +9,7 @@ namespace DiscordClone.Hubs
         private readonly ConcurrentDictionary<string, string> _userConnections = new ConcurrentDictionary<string, string>();
         public override async Task OnConnectedAsync()
         {
-            var userId = Context.UserIdentifier; 
+            var userId = Context.UserIdentifier;
             if (userId != null)
             {
                 _userConnections[userId] = Context.ConnectionId;
@@ -22,7 +22,7 @@ namespace DiscordClone.Hubs
             var userId = Context.UserIdentifier;
             if (userId != null)
             {
-                _userConnections.TryRemove(userId, out _); 
+                _userConnections.TryRemove(userId, out _);
             }
             await base.OnDisconnectedAsync(exception);
         }
@@ -62,7 +62,7 @@ namespace DiscordClone.Hubs
                 Type = type,
                 Payload = payload
             };
-            
+
             if (_userConnections.TryGetValue(userId, out var connectionId))
             {
                 await Clients.Client(connectionId).SendAsync("ReceiveNotification", notification);
@@ -145,6 +145,45 @@ namespace DiscordClone.Hubs
             if (_userConnections.TryGetValue(targetId, out var connectionId))
             {
                 await Clients.Client(connectionId).SendAsync("ReceiveIceCandidate", candidate);
+            }
+        }
+        
+        public async Task WebRtcOffer(string fromUserId, string toUserId, object offer, string groupId)
+        {
+            if (_userConnections.TryGetValue(toUserId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("webrtc-offer", new
+                {
+                    from = fromUserId,
+                    offer,
+                    groupId
+                });
+            }
+        }
+
+        public async Task WebRtcAnswer(string fromUserId, string toUserId, object answer, string groupId)
+        {
+            if (_userConnections.TryGetValue(toUserId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("webrtc-answer", new
+                {
+                    from = fromUserId,
+                    answer,
+                    groupId
+                });
+            }
+        }
+
+        public async Task WebRtcIceCandidate(string fromUserId, string toUserId, object candidate, string groupId)
+        {
+            if (_userConnections.TryGetValue(toUserId, out var connectionId))
+            {
+                await Clients.Client(connectionId).SendAsync("webrtc-ice-candidate", new
+                {
+                    from = fromUserId,
+                    candidate = candidate,
+                    groupId = groupId
+                });
             }
         }
     }

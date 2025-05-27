@@ -1,5 +1,5 @@
 import { observer } from "mobx-react-lite";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     Mic,
     MicOff,
@@ -15,73 +15,113 @@ import {
     Avatar,
     Paper,
     Stack,
-    AppBar,
-    Toolbar,
 } from "@mui/material";
-
-const dummyUsers = [
-    { id: 1, name: "Alice", muted: false, video: true },
-    { id: 2, name: "Bob", muted: true, video: false },
-    { id: 3, name: "Charlie", muted: false, video: false },
-    { id: 4, name: "Diana", muted: true, video: true },
-];
+import { useStore } from "../../../app/stores/store";
 
 export default observer(function GroupCallSection() {
+    const { callStore } = useStore();
     const [muted, setMuted] = useState(false);
     const [video, setVideo] = useState(true);
+
+    const localVideoRef = useRef<HTMLVideoElement>(null);
+    const remoteRefs = useRef<Map<string, HTMLMediaElement>>(new Map());
+
+    useEffect(() => {
+    callStore.initLocalStream()
+        .then(stream => {
+        console.log("Local stream ready", stream);
+        })
+        .catch(err => {
+        console.error("Failed to get local media", err);
+        });
+    }, []);
+
+    useEffect(() => {
+        // Attach local stream to video element
+        if (localVideoRef.current && callStore.localStream) {
+            localVideoRef.current.srcObject = callStore.localStream;
+        }
+    }, [callStore.localStream]);
+
+    useEffect(() => {
+        // Attach remote streams
+        callStore.remoteStreams.forEach((stream, userId) => {
+            const ref = remoteRefs.current.get(userId);
+            if (ref && ref.srcObject !== stream) {
+                ref.srcObject = stream;
+            }
+        });
+    }, [callStore.remoteStreams]);
+
+    const renderRemoteVideos = () => {
+        const entries = Array.from(callStore.remoteStreams.entries());
+        return entries.map(([userId, stream]) => (
+            <Grid item xs={6} md={3} key={userId}>
+                <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#2c2c2c" }} elevation={2}>
+                    <audio
+                        ref={(el) => { 
+                            if (el) {
+                                remoteRefs.current.set(userId, el); 
+                                el.srcObject = stream;
+                            }
+                        }}
+                        autoPlay
+                        playsInline
+                        style={{ width: "100%" }}
+                    />
+                    <Typography variant="subtitle1" mt={1}>
+                        User {userId}
+                    </Typography>
+                </Paper>
+            </Grid>
+        ));
+    };
+
+    const toggleMute = () => {
+    if (callStore.localStream) {
+        callStore.localStream.getAudioTracks().forEach(track => {
+            track.enabled = !track.enabled;
+        });
+        setMuted(!muted);
+    }
+    };
+
 
     return (
         <Box sx={{ height: "100%", bgcolor: "#121212", color: "white", display: "flex", flexDirection: "column" }}>
             {/* User Grid */}
             <Grid container spacing={2} sx={{ p: 2, flex: 1, overflowY: "auto" }}>
-                {dummyUsers.map((user) => (
-                    <Grid item xs={6} md={3} key={user.id}>
-                        <Paper
-                            sx={{
-                                p: 2,
-                                textAlign: "center",
-                                bgcolor: "#2c2c2c",
-                            }}
-                            elevation={2}
-                        >
-                            <Avatar
-                                sx={{
-                                    width: 64,
-                                    height: 64,
-                                    mx: "auto",
-                                    mb: 1,
-                                    opacity: user.video ? 1 : 0.5,
-                                }}
-                            >
-                                {user.name[0]}
-                            </Avatar>
-                            <Typography variant="subtitle1">{user.name}</Typography>
-                            <Stack direction="row" spacing={1} justifyContent="center" mt={1}>
-                                {user.muted ? (
-                                    <MicOff color="error" />
-                                ) : (
-                                    <Mic color="success" />
-                                )}
-                                {user.video ? (
-                                    <Videocam color="success" />
-                                ) : (
-                                    <VideocamOff color="error" />
-                                )}
-                            </Stack>
+                {/* Local User */}
+                {callStore.localStream && (
+                    <Grid item xs={6} md={3}>
+                        <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#2c2c2c" }} elevation={2}>
+                            <video
+                                ref={localVideoRef}
+                                autoPlay
+                                muted
+                                playsInline
+                                style={{ width: "100%", borderRadius: "8px" }}
+                            />
+                            <Typography variant="subtitle1" mt={1}>
+                                You
+                            </Typography>
                         </Paper>
                     </Grid>
-                ))}
+                )}
+
+                {/* Remote Users */}
+                {renderRemoteVideos()}
             </Grid>
 
             {/* Controls */}
             <Box sx={{ p: 2, bgcolor: "#1e1e1e", display: "flex", justifyContent: "center", gap: 3 }}>
-                <IconButton onClick={() => setMuted(!muted)} color="primary">
-                    {muted ? <MicOff /> : <Mic />}
-                </IconButton>
+            <IconButton onClick={toggleMute} color="primary">
+                {muted ? <MicOff /> : <Mic />}
+            </IconButton>
                 <IconButton onClick={() => setVideo(!video)} color="primary">
                     {video ? <Videocam /> : <VideocamOff />}
                 </IconButton>
-                <IconButton color="error">
+                <IconButton onClick={() => callStore.leaveCall()} color="error">
                     <CallEnd />
                 </IconButton>
             </Box>
