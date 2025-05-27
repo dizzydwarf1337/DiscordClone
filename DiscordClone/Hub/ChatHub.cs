@@ -148,43 +148,69 @@ namespace DiscordClone.Hubs
             }
         }
         
-        public async Task WebRtcOffer(string fromUserId, string toUserId, object offer, string groupId)
+        public async Task WebRtcOffer(string fromUserId, string toUserId, RTCSessionDescription offer, string groupId)
         {
             if (_userConnections.TryGetValue(toUserId, out var connectionId))
             {
                 await Clients.Client(connectionId).SendAsync("webrtc-offer", new
                 {
                     from = fromUserId,
-                    offer,
+                    offer = new
+                    {
+                        type = offer.Type,
+                        sdp = offer.Sdp
+                    },
                     groupId
                 });
             }
         }
 
-        public async Task WebRtcAnswer(string fromUserId, string toUserId, object answer, string groupId)
+        public async Task WebRtcAnswer(string fromUserId, string toUserId, RTCSessionDescription answer, string groupId)
         {
             if (_userConnections.TryGetValue(toUserId, out var connectionId))
             {
                 await Clients.Client(connectionId).SendAsync("webrtc-answer", new
                 {
                     from = fromUserId,
-                    answer,
+                    answer = new
+                    {
+                        type = answer.Type,
+                        sdp = answer.Sdp
+                    },
                     groupId
                 });
             }
         }
 
-        public async Task WebRtcIceCandidate(string fromUserId, string toUserId, object candidate, string groupId)
+        public async Task WebRtcIceCandidate(string fromUserId, string toUserId, RTCIceCandidate candidate, string groupId)
         {
             if (_userConnections.TryGetValue(toUserId, out var connectionId))
             {
                 await Clients.Client(connectionId).SendAsync("webrtc-ice-candidate", new
                 {
                     from = fromUserId,
-                    candidate = candidate,
-                    groupId = groupId
+                    candidate = new
+                    {
+                        candidate = candidate.Candidate,
+                        sdpMid = candidate.SdpMid,
+                        sdpMLineIndex = candidate.SdpMLineIndex
+                    },
+                    groupId
                 });
             }
+        }
+
+        public class RTCSessionDescription
+        {
+            public string Type { get; set; }
+            public string Sdp { get; set; }
+        }
+
+        public class RTCIceCandidate
+        {
+            public string Candidate { get; set; }
+            public string SdpMid { get; set; }
+            public int? SdpMLineIndex { get; set; }
         }
     }
 }

@@ -104,23 +104,29 @@ export default class SignalRStore {
     private setupConnectionEvents() {
         if (!this.connection) return;
 
-        this.connection.onreconnecting(() => {
+        this.connection.onreconnecting(error => {
             runInAction(() => {
                 this.isConnected = false;
-                console.log("Attempting to reconnect...");
+                console.log("SignalR reconnecting...", error);
             });
         });
 
-        this.connection.onreconnected(async () => {
-            console.log("Connection restored");
+        this.connection.onreconnected(async connectionId => {
+            console.log("SignalR reconnected, connectionId:", connectionId);
             await this.reinitializeConnection();
+            runInAction(() => {
+                this.isConnected = true;
+                this.retryCount = 0; // reset manual retries if you use any
+            });
         });
 
         this.connection.onclose(error => {
-            runInAction(() => this.isConnected = false);
+            runInAction(() => {
+                this.isConnected = false;
+            });
+
             if (error) {
-                console.error("Connection closed:", error);
-                this.handleConnectionFailure();
+                console.error("SignalR connection closed:", error);
             }
         });
     }

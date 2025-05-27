@@ -10,224 +10,240 @@ export default class CallStore {
     public localStream: MediaStream | null = null;
     public remoteStreams: Map<string, MediaStream> = new Map();
 
-    constructor(signalrStore: SignalRStore) {
-        makeAutoObservable(this);
-        this.signalRStore = signalrStore;
+    constructor(signalRStore: SignalRStore) {
+      makeAutoObservable(this);
+      this.signalRStore = signalRStore;
 
-        if (!this.signalRStore.connection) {
-            console.error("SignalR connection is not initialized");
-            return;
+      this.waitForConnectionAndBindHandlers();
+    }
+
+    private async waitForConnectionAndBindHandlers(retries = 10, delayMs = 500) {
+      for (let attempt = 0; attempt < retries; attempt++) {
+        if (this.signalRStore.connection) {
+          this.signalRStore.connection.on("webrtc-offer", this.handleOffer);
+          this.signalRStore.connection.on("webrtc-answer", this.handleAnswer);
+          this.signalRStore.connection.on("webrtc-ice-candidate", this.handleIceCandidate);
+          console.log("[CallStore] SignalR connection initialized and handlers bound");
+          return;
         }
+        await this.sleep(delayMs);
+      }
+      console.error("SignalR connection is not initialized after retries");
+    }
 
-        console.log("[CallStore] Initializing WebRTC handlers");
-
-        this.signalRStore.connection.on("webrtc-offer", this.handleOffer);
-        this.signalRStore.connection.on("webrtc-answer", this.handleAnswer);
-        this.signalRStore.connection.on("webrtc-ice-candidate", this.handleIceCandidate);
+    private sleep(ms: number) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     public async initLocalStream(): Promise<MediaStream> {
-        if (!this.localStream) {
+        if (this.localStream) {
+            return this.localStream;
+        }
+
+        try {
             console.log("[CallStore] Initializing local media stream");
-            const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: false, 
+                audio: true 
+            });
+            
             runInAction(() => {
                 this.localStream = stream;
             });
+            
             console.log("[CallStore] Local stream obtained", this.localStream);
+            return this.localStream;
+        } catch (error) {
+            console.error("[CallStore] Failed to obtain local media stream", error);
+            throw new Error("Failed to obtain local media stream");
         }
-        if (!this.localStream) {
-            throw new Error("[CallStore] Failed to obtain local media stream");
-        }
-        return this.localStream;
     }
 
-    public async joinCall(groupId: string, participantIds: string[]): Promise<void> {
-        console.log(`[CallStore] Joining group call ${groupId} with participants:`, participantIds);
-
+    public async joinCall(groupId: string, participantIds: string[]) {
         if (this.currentCall) {
-            console.error("Already in a group call");
+            console.error("Already in a call");
             return;
         }
 
+        await this.initLocalStream(); // Ensure local stream is initialized
         const participants = new Map<string, RTCPeerConnection>();
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
 
         for (const participantId of participantIds) {
-            console.log(`[CallStore] Creating peer connection to ${participantId}`);
-            const peerConnection = new RTCPeerConnection({
-                iceServers: [
-                    { urls: "stun:stun.l.google.com:19302" },
-                    // Add TURN servers here if needed
-                ]
+            if (participantId === user.id) continue; // Skip self
+
+            const pc = new RTCPeerConnection({
+                iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
             });
 
-            // Add local tracks if available
-            if (this.localStream) {
-                this.localStream.getTracks().forEach(track => {
-                    console.log(`[CallStore] Adding local track to ${participantId}:`, track);
-                    peerConnection.addTrack(track, this.localStream!);
-                });
-            }
+            // Add local tracks
+            this.localStream?.getTracks().forEach(track => {
+                pc.addTrack(track, this.localStream!);
+            });
 
-            const user = JSON.parse(localStorage.getItem("user") || "{}");
-            peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    console.log(`[CallStore] Sending ICE candidate to ${participantId}:`, event.candidate);
-                    if (this.signalRStore.connection) {
-                        this.signalRStore.connection.invoke("WebRtcIceCandidate", user.id,
-                            participantId,
-                            event.candidate,
-                            groupId,
-                        ).catch(console.error);
-                    } else {
-                        console.error("SignalR connection is not initialized");
+            pc.onicecandidate = (event) => {
+                if (event.candidate && this.signalRStore.connection) {
+                    this.signalRStore.connection.invoke("WebRtcIceCandidate",
+                        user.id,
+                        participantId,
+                        {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex
+                        },
+                        groupId
+                    ).catch(err => console.error("Error sending ICE candidate:", err));
+                }
+            };
+
+            pc.ontrack = (event) => {
+                runInAction(() => {
+                    if (!this.remoteStreams.has(participantId)) {
+                        this.remoteStreams.set(participantId, new MediaStream());
                     }
-                }
-            };
-
-            peerConnection.ontrack = (event) => {
-                console.log(`[CallStore] Received ${event.track.kind} track from ${participantId}`, event.streams);
-                if (event.streams && event.streams.length > 0) {
-                    runInAction(() => {
-                        // Create a new MediaStream if one doesn't exist for this participant
-                        if (!this.remoteStreams.has(participantId)) {
-                            this.remoteStreams.set(participantId, new MediaStream());
+                    const remoteStream = this.remoteStreams.get(participantId)!;
+                    event.streams[0].getTracks().forEach(track => {
+                        if (!remoteStream.getTracks().some(t => t.id === track.id)) {
+                            remoteStream.addTrack(track);
                         }
-                        
-                        // Add all tracks from the received streams
-                        const remoteStream = this.remoteStreams.get(participantId)!;
-                        event.streams.forEach(stream => {
-                            stream.getTracks().forEach(track => {
-                                if (!remoteStream.getTracks().some(t => t.id === track.id)) {
-                                    remoteStream.addTrack(track);
-                                }
-                            });
-                        });
                     });
-                }
+                });
             };
 
-            const offer = await peerConnection.createOffer();
-            console.log(`[CallStore] Created offer for ${participantId}`, offer);
+            try {
+                const offer = await pc.createOffer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: false
+                });
+                await pc.setLocalDescription(offer);
 
-            await peerConnection.setLocalDescription(offer);
-            console.log(`[CallStore] Set local description for ${participantId}`);
-            console.log(`My user ID: ${user.id}`);
-            const plainOffer = { type: offer.type, sdp: offer.sdp };
-            if (this.signalRStore.connection) {
-                this.signalRStore.connection.invoke("WebRtcOffer", user.id,
-                    participantId,
-                    plainOffer,
-                    groupId,
-                );
-                console.log(`[CallStore] Sent offer to ${participantId}`);
+                if (this.signalRStore.connection) {
+                    await this.signalRStore.connection.invoke("WebRtcOffer",
+                        user.id,
+                        participantId,
+                        { type: offer.type, sdp: offer.sdp },
+                        groupId
+                    );
+                }
+
+                participants.set(participantId, pc);
+            } catch (error) {
+                console.error("Error creating/sending offer:", error);
+                pc.close();
             }
-
-            participants.set(participantId, peerConnection);
         }
 
         runInAction(() => {
             this.currentCall = { groupId, participants };
         });
-
-        console.log("[CallStore] Group call joined successfully");
     }
 
-    private handleOffer = async ({ from, offer, groupId }: any) => {
-        console.log(`[CallStore] Received offer from ${from} in group ${groupId}`, offer);
-
-        if (!this.currentCall) {
+    private handleOffer = async ({ from, offer, groupId }: { from: string, offer: RTCSessionDescriptionInit, groupId: string }) => {
+        console.log("Received offer from", from);
+        if (!this.currentCall || this.currentCall.groupId !== groupId) {
             this.currentCall = {
                 groupId,
                 participants: new Map<string, RTCPeerConnection>(),
             };
         }
 
-        const peerConnection = new RTCPeerConnection();
-
-        // Add local tracks if available
-        if (this.localStream) {
-            this.localStream.getTracks().forEach(track => {
-                console.log(`[CallStore] Adding local track to ${from}:`, track);
-                peerConnection.addTrack(track, this.localStream!);
-            });
+        // Skip if we already have a connection for this participant
+        if (this.currentCall.participants.has(from)) {
+            console.warn(`Already have a connection for ${from}`);
+            return;
         }
 
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log(`[CallStore] Sending ICE candidate back to ${from}`, event.candidate);
-                if (this.signalRStore.connection) {
-                    this.signalRStore.connection.invoke("WebRtcIceCandidate", user.id,
-                        from,
-                        event.candidate,
-                        groupId,
-                    );
-                }
-            }
-        };
+        const pc = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
 
-        peerConnection.ontrack = (event) => {
-            console.log(`[CallStore] Received remote track from ${from}`, event.streams);
-            if (event.streams && event.streams.length > 0) {
+        try {
+            // Add local tracks first
+            if (this.localStream) {
+                this.localStream.getTracks().forEach(track => {
+                    pc.addTrack(track, this.localStream!);
+                });
+            }
+
+            // Set up event handlers
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            pc.onicecandidate = (event) => {
+                if (event.candidate && this.signalRStore.connection) {
+                    this.signalRStore.connection.invoke("WebRtcIceCandidate",
+                        user.id,
+                        from,
+                        {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex
+                        },
+                        groupId
+                    ).catch(console.error);
+                }
+            };
+
+            pc.ontrack = (event) => {
                 runInAction(() => {
-                    // Create a new MediaStream if one doesn't exist for this participant
                     if (!this.remoteStreams.has(from)) {
                         this.remoteStreams.set(from, new MediaStream());
                     }
-                    
-                    // Add all tracks from the received streams
                     const remoteStream = this.remoteStreams.get(from)!;
-                    event.streams.forEach(stream => {
-                        stream.getTracks().forEach(track => {
-                            if (!remoteStream.getTracks().some(t => t.id === track.id)) {
-                                remoteStream.addTrack(track);
-                            }
-                        });
+                    event.streams[0].getTracks().forEach(track => {
+                        if (!remoteStream.getTracks().some(t => t.id === track.id)) {
+                            remoteStream.addTrack(track);
+                        }
                     });
                 });
+            };
+
+            // Process the offer
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+
+            if (this.signalRStore.connection) {
+                await this.signalRStore.connection.invoke("WebRtcAnswer",
+                    user.id,
+                    from,
+                    { type: answer.type, sdp: answer.sdp },
+                    groupId
+                );
             }
-        };
 
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        console.log(`[CallStore] Set remote description from ${from}`);
+            runInAction(() => {
+                this.currentCall?.participants.set(from, pc);
+            });
 
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        console.log(`[CallStore] Created and set local answer for ${from}`, answer);
-        const plainAnswer = { type: answer.type, sdp: answer.sdp };
-        if (this.signalRStore.connection) {
-            this.signalRStore.connection.invoke("WebRtcAnswer", user.id,
-                from,
-                plainAnswer,
-                groupId,
-            );
-            console.log(`[CallStore] Sent answer to ${from}`);
-        }
-
-        runInAction(() => {
-            this.currentCall.participants.set(from, peerConnection);
-        });
-    };
-
-    private handleAnswer = async ({ from, answer }: any) => {
-        console.log(`[CallStore] Received answer from ${from}`, answer);
-        const peerConnection = this.currentCall?.participants.get(from);
-        if (peerConnection) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-            console.log(`[CallStore] Set remote description from ${from}`);
-        } else {
-            console.warn(`[CallStore] No peer connection found for ${from}`);
+        } catch (error) {
+            console.error("Error handling offer:", error);
+            pc.close();
         }
     };
 
-    private handleIceCandidate = async ({ from, candidate, groupId }: any) => {
-        console.log(`[CallStore] Received ICE candidate from ${from} groupId`, candidate, groupId);
-        const peerConnection = this.currentCall?.participants.get(from);
-        if (peerConnection && candidate) {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-            console.log(`[CallStore] Added ICE candidate from ${from}`);
+    private handleAnswer = async ({ from, answer, groupId }: { from: string, answer: RTCSessionDescriptionInit, groupId: string }) => {
+        console.log("Received answer from", from);
+        const pc = this.currentCall?.participants.get(from);
+        if (pc) {
+            try {
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+            } catch (error) {
+                console.error("Error setting remote description:", error);
+            }
         } else {
-            console.warn(`[CallStore] No peer connection or invalid candidate from ${from}`);
+            console.warn(`No peer connection found for ${from}`);
+        }
+    };
+
+    private handleIceCandidate = async ({ from, candidate, groupId }: { from: string, candidate: RTCIceCandidateInit, groupId: string }) => {
+        if (!this.currentCall || this.currentCall.groupId !== groupId) return;
+
+        const pc = this.currentCall.participants.get(from);
+        if (pc && candidate) {
+            try {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (e) {
+                console.error("Error adding ICE candidate:", e);
+            }
         }
     };
 
@@ -235,14 +251,26 @@ export default class CallStore {
         console.log("[CallStore] Leaving call");
         if (!this.currentCall) return;
 
+        // Close all peer connections
         this.currentCall.participants.forEach((pc, id) => {
             console.log(`[CallStore] Closing connection with ${id}`);
             pc.close();
         });
 
+        // Stop all local tracks
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+        }
+
+        // Stop all remote tracks
+        this.remoteStreams.forEach(stream => {
+            stream.getTracks().forEach(track => track.stop());
+        });
+
         runInAction(() => {
             this.currentCall = null;
             this.remoteStreams.clear();
+            // Don't clear localStream as it might be reused
         });
 
         console.log("[CallStore] Left the call successfully");
