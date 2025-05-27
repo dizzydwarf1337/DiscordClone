@@ -216,6 +216,7 @@ export default class CallStore {
                             remoteStream.addTrack(track);
                         }
                     });
+                    console.log("Remote stream tracks:", remoteStream.getTracks());
                 });
             };
 

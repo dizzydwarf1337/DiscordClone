@@ -73,24 +73,22 @@ export default observer(function GroupCallSection() {
     function RemoteAudio({ userId, stream }: { userId: string; stream: MediaStream }) {
         const audioRef = useRef<HTMLAudioElement>(null);
 
-        useEffect(() => {
-            const audio = audioRef.current;
-            if (audio && audio.srcObject !== stream) {
-                audio.srcObject = stream;
-                remoteRefs.current.set(userId, audio);
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (audio && audio.srcObject !== stream) {
+            audio.srcObject = stream;
+            audio.muted = false;  
+            audio.volume = 1;  
+            remoteRefs.current.set(userId, audio);
 
-                setRemoteVolumes(prev => {
-                    if (prev[userId] === undefined) {
-                        return { ...prev, [userId]: true };
-                    }
-                    return prev;
-                });
-            }
-
-            return () => {
-                remoteRefs.current.delete(userId);
-            };
-        }, [stream, userId]);
+            setRemoteVolumes(prev => {
+                if (prev[userId] === undefined) {
+                    return { ...prev, [userId]: true };
+                }
+                return prev;
+            });
+        }
+    }, [stream, userId]);
 
         return (
             <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -104,7 +102,7 @@ export default observer(function GroupCallSection() {
                         ref={audioRef}
                         autoPlay
                         playsInline
-                        style={{ width: "100%", display: "none" }} // Hidden but still playing
+                        style={{ width: "100%",/* display: "none"*/ }} // Hidden but still playing
                     />
                     <Typography variant="subtitle1" mt={1}>
                         User {userId}
