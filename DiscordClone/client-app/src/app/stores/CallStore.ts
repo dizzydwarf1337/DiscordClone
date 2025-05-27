@@ -60,11 +60,14 @@ export default class CallStore {
                 ]
             });
 
+            // Add local tracks if available
+            if (this.localStream) {
+                this.localStream.getTracks().forEach(track => {
+                    console.log(`[CallStore] Adding local track to ${participantId}:`, track);
+                    peerConnection.addTrack(track, this.localStream!);
+                });
+            }
 
-            this.localStream?.getTracks().forEach(track => {
-                console.log(`[CallStore] Adding local track to ${participantId}:`, track);
-                peerConnection.addTrack(track, this.localStream!);
-            });
             const user = JSON.parse(localStorage.getItem("user") || "{}");
             peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
@@ -82,10 +85,25 @@ export default class CallStore {
             };
 
             peerConnection.ontrack = (event) => {
-                console.log(`Received ${event.track.kind} track from ${from}`, event.streams);
-                runInAction(() => {
-                this.remoteStreams.set(participantId, event.streams[0]);
-                });
+                console.log(`[CallStore] Received ${event.track.kind} track from ${participantId}`, event.streams);
+                if (event.streams && event.streams.length > 0) {
+                    runInAction(() => {
+                        // Create a new MediaStream if one doesn't exist for this participant
+                        if (!this.remoteStreams.has(participantId)) {
+                            this.remoteStreams.set(participantId, new MediaStream());
+                        }
+                        
+                        // Add all tracks from the received streams
+                        const remoteStream = this.remoteStreams.get(participantId)!;
+                        event.streams.forEach(stream => {
+                            stream.getTracks().forEach(track => {
+                                if (!remoteStream.getTracks().some(t => t.id === track.id)) {
+                                    remoteStream.addTrack(track);
+                                }
+                            });
+                        });
+                    });
+                }
             };
 
             const offer = await peerConnection.createOffer();
@@ -126,10 +144,14 @@ export default class CallStore {
 
         const peerConnection = new RTCPeerConnection();
 
-        this.localStream?.getTracks().forEach(track => {
-            console.log(`[CallStore] Adding local track to ${from}:`, track);
-            peerConnection.addTrack(track, this.localStream!);
-        });
+        // Add local tracks if available
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => {
+                console.log(`[CallStore] Adding local track to ${from}:`, track);
+                peerConnection.addTrack(track, this.localStream!);
+            });
+        }
+
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
@@ -145,8 +167,25 @@ export default class CallStore {
         };
 
         peerConnection.ontrack = (event) => {
-            console.log(`[CallStore] Received remote track from ${from}`, event.streams[0]);
-            this.remoteStreams.set(from, event.streams[0]);
+            console.log(`[CallStore] Received remote track from ${from}`, event.streams);
+            if (event.streams && event.streams.length > 0) {
+                runInAction(() => {
+                    // Create a new MediaStream if one doesn't exist for this participant
+                    if (!this.remoteStreams.has(from)) {
+                        this.remoteStreams.set(from, new MediaStream());
+                    }
+                    
+                    // Add all tracks from the received streams
+                    const remoteStream = this.remoteStreams.get(from)!;
+                    event.streams.forEach(stream => {
+                        stream.getTracks().forEach(track => {
+                            if (!remoteStream.getTracks().some(t => t.id === track.id)) {
+                                remoteStream.addTrack(track);
+                            }
+                        });
+                    });
+                });
+            }
         };
 
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
@@ -165,7 +204,9 @@ export default class CallStore {
             console.log(`[CallStore] Sent answer to ${from}`);
         }
 
-        this.currentCall.participants.set(from, peerConnection);
+        runInAction(() => {
+            this.currentCall.participants.set(from, peerConnection);
+        });
     };
 
     private handleAnswer = async ({ from, answer }: any) => {
@@ -201,6 +242,7 @@ export default class CallStore {
 
         runInAction(() => {
             this.currentCall = null;
+            this.remoteStreams.clear();
         });
 
         console.log("[CallStore] Left the call successfully");
