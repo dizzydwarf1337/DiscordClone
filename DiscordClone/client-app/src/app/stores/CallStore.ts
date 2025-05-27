@@ -279,15 +279,27 @@ export default class CallStore {
         console.log("[CallStore] Leaving call");
         if (!this.currentCall) return;
 
-        // Close all peer connections
+        // Close all peer connections and cleanup event handlers
         this.currentCall.participants.forEach((pc, id) => {
             console.log(`[CallStore] Closing connection with ${id}`);
+
+            // Remove all event handlers
+            pc.onicecandidate = null;
+            pc.ontrack = null;
+            pc.onconnectionstatechange = null;
+            pc.oniceconnectionstatechange = null;
+            pc.onicegatheringstatechange = null;
+            pc.onsignalingstatechange = null;
+
+            // Close connection
             pc.close();
         });
 
         // Stop all local tracks
         if (this.localStream) {
             this.localStream.getTracks().forEach(track => track.stop());
+            // Optional: clear localStream if you want fresh initialization next time
+            // this.localStream = null;
         }
 
         // Stop all remote tracks
@@ -298,9 +310,9 @@ export default class CallStore {
         runInAction(() => {
             this.currentCall = null;
             this.remoteStreams.clear();
-            // Don't clear localStream as it might be reused
         });
 
         console.log("[CallStore] Left the call successfully");
     }
+
 }
