@@ -1,24 +1,29 @@
 import { createContext, useContext } from "react";
 
 import UserStore from "./userStore";
-import SignalRStore from "./SignalRStore";
+import ChatSignalRStore from "./chatSignalRStore";
+import VoiceSignalRStore from "./voiceSignalRStore";
 import { ServerStore } from './serverStore';
 import { ChannelStore } from "./channelStore";
 import FriendStore from "./friendStore";
+
 interface Store {
     userStore: UserStore,
-    signalRStore: SignalRStore,
+    chatSignalRStore: ChatSignalRStore,
+    voiceSignalRStore: VoiceSignalRStore,
     serverStore: ServerStore,
     channelStore: ChannelStore,
     friendStore: FriendStore,
 }
 
 const friendStore = new FriendStore();
-const signalRStore = new SignalRStore(friendStore);
+const chatSignalRStore = new ChatSignalRStore(friendStore);
+const voiceSignalRStore = new VoiceSignalRStore();
 
 export const store: Store = {
     userStore: new UserStore(),
-    signalRStore,
+    chatSignalRStore,
+    voiceSignalRStore,
     serverStore: new ServerStore(),
     channelStore: new ChannelStore(),
     friendStore

@@ -7,13 +7,13 @@ import { useParams } from "react-router-dom";
 import GroupMessage from "../../../app/Models/GroupMessage";
 import SendIcon from '@mui/icons-material/Send';
 export default observer(function GroupChatMessageTextField() {
-    const { signalRStore, userStore } = useStore();
+    const { chatSignalRStore, userStore } = useStore();
     const [content, setContent] = useState("");
     const { groupId } = useParams();
     const handleMessageChange = (e: ChangeEvent<HTMLInputElement>) => {
         setContent(e.target.value);
     };
-    useEffect(() => { },[signalRStore])
+    useEffect(() => { },[chatSignalRStore])
 
     const handleSend = async () => {
         if (!content.trim()) return;
@@ -26,7 +26,7 @@ export default observer(function GroupChatMessageTextField() {
             groupId: groupId!,
         };
         try {
-            await signalRStore.sendGroupMessage(message);
+            await chatSignalRStore.sendGroupMessage(message);
             setContent("");
 
         } catch (error) {

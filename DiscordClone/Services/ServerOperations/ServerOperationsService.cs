@@ -3,6 +3,7 @@ using DiscordClone.Hubs;
 using DiscordClone.Models;
 using DiscordClone.Models.Dtos;
 using DiscordClone.Utils;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace DiscordClone.Services.ServerOperations
@@ -17,21 +18,23 @@ namespace DiscordClone.Services.ServerOperations
         Task<Result<string>> RemoveBanAsync(Guid serverId, Guid removerId, Guid bannedUserId);
         Task<Result<ServerDto>> GetServerByIdAsync(Guid serverId);
         Task<Result<ICollection<ServerDto>>> GetServersByUserIdAsync(Guid userId);
-
         Task<Result<ICollection<UserDto>>> GetServerMembersAsync(Guid serverId);
+        Task<bool> IsUserAdminAsync(Guid serverId, Guid userId);
     }
 
     public class ServerOperationsService : IServerOperationsService
     {
         private readonly ApplicationContext _context;
         private readonly IChannelOperationsService _channelOperationService;
-        private readonly ChatHub _chatHub;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-        public ServerOperationsService(ApplicationContext context, IChannelOperationsService channelOperationService, ChatHub chatHub)
+        public ServerOperationsService(ApplicationContext context,
+                                     IChannelOperationsService channelOperationService,
+                                     IHubContext<ChatHub> hubContext)
         {
             _context = context;
             _channelOperationService = channelOperationService;
-            _chatHub = chatHub;
+            _hubContext = hubContext;
         }
 
         public async Task<Result<ServerDto>> CreateServerAsync(ServerCreateDto serverDto)
@@ -53,6 +56,7 @@ namespace DiscordClone.Services.ServerOperations
 
             await _context.Servers.AddAsync(server);
             await _context.SaveChangesAsync();
+
             var serverMember = new ServerMember
             {
                 ServerMemberId = Guid.NewGuid(),
@@ -62,7 +66,9 @@ namespace DiscordClone.Services.ServerOperations
                 IsMuted = false
             };
             await _context.ServerMembers.AddAsync(serverMember);
-            await _channelOperationService.CreateChannelAsync(new ChannelCreateDto { ServerId = server.ServerId, Name = "Default", ChannelType = "Default" }, owner.Id);
+
+            await _channelOperationService.CreateChannelAsync(new ChannelCreateDto { ServerId = server.ServerId, Name = "Default", ChannelType = "text" }, owner.Id);
+
 
             var serverAdminRole = new Role
             {
@@ -80,9 +86,12 @@ namespace DiscordClone.Services.ServerOperations
                 ServerId = server.ServerId,
                 Permissions = "SEND_MESSAGES",
                 Color = "Blue",
+                CreatedAt = DateTime.UtcNow
             };
-            await _context.ServersRoles.AddRangeAsync([serverAdminRole, serverUserRole]);
+            await _context.ServersRoles.AddRangeAsync(serverAdminRole, serverUserRole);
+
             await _context.SaveChangesAsync();
+
             var serverDtoResult = new ServerDto
             {
                 ServerId = server.ServerId,
@@ -102,7 +111,7 @@ namespace DiscordClone.Services.ServerOperations
                 return Result<string>.Failure("User not found");
             }
 
-            var server = await _context.Servers.FindAsync(serverId);
+            var server = await _context.Servers.Include(s => s.Channels).FirstOrDefaultAsync(s => s.ServerId == serverId);
             if (server == null)
             {
                 return Result<string>.Failure("Server not found");
@@ -131,35 +140,42 @@ namespace DiscordClone.Services.ServerOperations
                 JoinedAt = DateTime.UtcNow,
                 IsMuted = false
             };
-            var channels = await _context.Channels.Where(x => x.ServerId == serverId).ToListAsync();
-            foreach (var channel in channels)
+            await _context.ServerMembers.AddAsync(serverMember);
+
+            var defaultChannel = server.Channels.FirstOrDefault(c => c.Name == "Default" && c.ChannelType == "text");
+            if (defaultChannel != null)
             {
-                await _channelOperationService.JoinChannelAsync($"{server.Name}:{channel.Name}");
-                await _context.ServerMembers.AddAsync(serverMember);
+                var messageDto = new MessageDto
+                {
+                    MessageId = Guid.NewGuid(),
+                    ChannelId = defaultChannel.ChannelId,
+                    Content = $"{user.UserName} has joined the server!",
+                    SenderId = userId,
+                    SenderName = "System",
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                var messageEntity = new Message
+                {
+                    MessageId = messageDto.MessageId,
+                    Content = messageDto.Content,
+                    UserId = messageDto.SenderId,
+                    ChannelId = defaultChannel.ChannelId,
+                    CreatedAt = messageDto.CreatedAt
+                };
+                await _context.Messages.AddAsync(messageEntity);
+
+                await _hubContext.Clients.Group(defaultChannel.ChannelId.ToString())
+                    .SendAsync("ReceiveMessage", messageDto);
             }
-            var message = new MessageDto { CreatedAt = DateTime.UtcNow, Content = $"{user.UserName} has connected to the server", MessageId = Guid.NewGuid(), SenderId = user.Id, SenderName = "Server" };
-            await _context.Messages.AddAsync(new Message { MessageId = message.MessageId, Content = message.Content, UserId = message.SenderId, ChannelId = server.Channels.FirstOrDefault(x => x.Name == "Default").ChannelId });
-            await _chatHub.SendMessage(message, $"{server.Name}:Default");
+
             await _context.SaveChangesAsync();
 
             return Result<string>.Success("User successfully joined the server");
         }
 
-
         public async Task<Result<string>> LeaveServerAsync(Guid userId, Guid serverId)
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-            {
-                return Result<string>.Failure("User not found");
-            }
-
-            var server = await _context.Servers.FindAsync(serverId);
-            if (server == null)
-            {
-                return Result<string>.Failure("Server not found");
-            }
-
             var userServer = await _context.ServerMembers
                 .FirstOrDefaultAsync(sm => sm.UserId == userId && sm.ServerId == serverId);
 
@@ -176,15 +192,7 @@ namespace DiscordClone.Services.ServerOperations
 
         public async Task<Result<string>> DeleteServerAsync(Guid userId, Guid serverId)
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-            {
-                return Result<string>.Failure("User not found");
-            }
-
-            var server = await _context.Servers
-                .FirstOrDefaultAsync(s => s.ServerId == serverId);
-
+            var server = await _context.Servers.FindAsync(serverId);
             if (server == null)
             {
                 return Result<string>.Failure("Server not found");
@@ -203,52 +211,46 @@ namespace DiscordClone.Services.ServerOperations
 
         public async Task<Result<string>> BanUserAsync(ServerBanDto serverban)
         {
-            var server = await _context.Servers
-                .FirstOrDefaultAsync(s => s.ServerId == serverban.ServerId);
+            var server = await _context.Servers.FindAsync(serverban.ServerId);
+            if (server == null) return Result<string>.Failure("Server not found");
 
-            if (server == null)
-            {
-                return Result<string>.Failure("Server not found");
-            }
-
-            var banningUser = await _context.Users.FindAsync(serverban.BanningUserId);
-            if (banningUser == null)
-            {
+            if (!await _context.Users.AnyAsync(u => u.Id == serverban.BanningUserId))
                 return Result<string>.Failure("Banning user not found");
-            }
 
-            var bannedUser = await _context.Users.FindAsync(serverban.BannedUserId);
-            if (bannedUser == null)
-            {
+            if (!await _context.Users.AnyAsync(u => u.Id == serverban.BannedUserId))
                 return Result<string>.Failure("Banned user not found");
-            }
 
-            // TODO Dodac autoryzzacje tutaj, sprawdzic czy uzytkownik ma permisje do zbanowania
+            // TODO: Authorization: Check if BanningUserId has permission to ban on this server
+
+            var existingBan = await _context.ServerBans
+                .FirstOrDefaultAsync(sb => sb.ServerId == serverban.ServerId && sb.BannedUserId == serverban.BannedUserId);
+            if (existingBan != null) return Result<string>.Failure("User is already banned");
 
             var serverBan = new ServerBan
             {
                 Reason = serverban.Reason,
                 ServerId = serverban.ServerId,
                 BanningUserId = serverban.BanningUserId,
-                BannedUserId = serverban.BannedUserId
+                BannedUserId = serverban.BannedUserId,
+                BannedAt = DateTime.UtcNow
             };
 
             _context.ServerBans.Add(serverBan);
-            await _context.SaveChangesAsync();
 
+            var memberToRemove = await _context.ServerMembers
+                .FirstOrDefaultAsync(sm => sm.ServerId == serverban.ServerId && sm.UserId == serverban.BannedUserId);
+            if (memberToRemove != null)
+            {
+                _context.ServerMembers.Remove(memberToRemove);
+            }
+
+            await _context.SaveChangesAsync();
+            // TODO: Notify user (if online) and server members about the ban via SignalR
             return Result<string>.Success("User banned successfully");
         }
 
         public async Task<Result<string>> RemoveBanAsync(Guid serverId, Guid removerId, Guid bannedUserId)
         {
-            var server = await _context.Servers
-                .FirstOrDefaultAsync(s => s.ServerId == serverId);
-
-            if (server == null)
-            {
-                return Result<string>.Failure("Server not found");
-            }
-
             var serverBan = await _context.ServerBans
                 .FirstOrDefaultAsync(sb => sb.ServerId == serverId && sb.BannedUserId == bannedUserId);
 
@@ -257,72 +259,73 @@ namespace DiscordClone.Services.ServerOperations
                 return Result<string>.Failure("Ban not found");
             }
 
-            var banningUser = await _context.Users.FindAsync(removerId);
-            if (banningUser == null)
-            {
-                return Result<string>.Failure("Remover user not found");
-            }
-
-            // TODO Dodac autoryzzacje tutaj, sprawdzic czy uzytkownik ma permisje do odbanowania
+            // TODO: Authorization: Check if removerId has permission to unban
 
             _context.ServerBans.Remove(serverBan);
             await _context.SaveChangesAsync();
-
+            // TODO: Notify relevant parties via SignalR
             return Result<string>.Success("Ban removed successfully");
         }
+
         public async Task<bool> IsUserAdminAsync(Guid serverId, Guid userId)
         {
-            var server = await _context.Servers.Include(s => s.Owner)
-                .FirstOrDefaultAsync(s => s.ServerId == serverId);
-            if (server != null)
+            var server = await _context.Servers.FindAsync(serverId);
+            if (server != null && server.OwnerId == userId)
             {
-                if (server.Owner.Id == userId) return true;
+                return true;
             }
+            // TODO: Extend this to check for users with an "Admin" role on the server
             return false;
         }
 
         public async Task<Result<ICollection<ServerDto>>> GetServersByUserIdAsync(Guid userId)
         {
-            var ServerMember = await _context.ServerMembers.Where(x => x.UserId == userId).ToListAsync();
-            var serversDto = new List<ServerDto>();
-            foreach (var serverMember in ServerMember)
-            {
-                var server = await _context.Servers.FindAsync(serverMember.ServerId);
-                serversDto.Add(new ServerDto { Description = server.Description, IconUrl = server.IconUrl, IsPublic = server.IsPublic, Name = server.Name, ServerId = server.ServerId });
-            }
-            return Result<ICollection<ServerDto>>.Success(serversDto);
+            var servers = await _context.ServerMembers
+                .Where(sm => sm.UserId == userId)
+                .Select(sm => sm.Server)
+                .Select(s => new ServerDto
+                {
+                    ServerId = s.ServerId,
+                    Name = s.Name,
+                    Description = s.Description,
+                    IconUrl = s.IconUrl,
+                    IsPublic = s.IsPublic
+                })
+                .ToListAsync();
+
+            return Result<ICollection<ServerDto>>.Success(servers);
         }
 
         public async Task<Result<ServerDto>> GetServerByIdAsync(Guid serverId)
         {
             var server = await _context.Servers.FindAsync(serverId);
-
-            if (server != null)
+            if (server == null)
             {
-                var serverDto = new ServerDto
-                {
-                    ServerId = server.ServerId,
-                    Name = server.Name,
-                    Description = server.Description,
-                    IconUrl = server.IconUrl,
-                    IsPublic = server.IsPublic
-                };
-                return Result<ServerDto>.Success(serverDto);
+                return Result<ServerDto>.Failure("No server found");
             }
-            else return Result<ServerDto>.Failure("No server found");
+
+            var serverDto = new ServerDto
+            {
+                ServerId = server.ServerId,
+                Name = server.Name,
+                Description = server.Description,
+                IconUrl = server.IconUrl,
+                IsPublic = server.IsPublic
+            };
+            return Result<ServerDto>.Success(serverDto);
         }
 
         public async Task<Result<ICollection<UserDto>>> GetServerMembersAsync(Guid serverId)
         {
             var serverMembers = await _context.ServerMembers
-                .Include(sm => sm.User)
                 .Where(sm => sm.ServerId == serverId)
-                .Select(sm => new UserDto
+                .Select(sm => sm.User)
+                .Select(u => new UserDto
                 {
-                    Id = sm.User.Id.ToString(),
-                    Username = sm.User.UserName,
-                    Email = sm.User.Email,
-                    Image = sm.User.AvatarUrl
+                    Id = u.Id.ToString(),
+                    Username = u.UserName,
+                    Email = u.Email,
+                    Image = u.AvatarUrl
                 })
                 .ToListAsync();
 

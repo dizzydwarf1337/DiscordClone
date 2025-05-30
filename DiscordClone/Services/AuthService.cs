@@ -9,57 +9,53 @@ namespace DiscordClone.Services
 {
     public class AuthService : IAuthService
     {
-        // UserManager is used to manage user-related actions like finding user roles
         private readonly UserManager<User> _userManager;
-        // IConfiguration is used to access configuration settings, such as JWT settings
         private readonly IConfiguration _configuration;
 
-        // Constructor for dependency injection
         public AuthService(UserManager<User> userManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _configuration = configuration;
         }
 
-        // Method to generate a JWT token for a user
         public async Task<string> GenerateJwtTokenAsync(User user)
         {
-            // List of claims for the user, including user ID and username
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // Claim for the user's unique identifier
-                  new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                 new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString(), ClaimValueTypes.DateTime),
-                new Claim(ClaimTypes.Name, user.UserName)  // Claim for the user's username
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), 
+
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+
+                new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString(), ClaimValueTypes.DateTime), 
+
+                new Claim(ClaimTypes.Name, user.UserName) 
             };
 
-            // Get the roles assigned to the user and add them as claims
-            var roles = await _userManager.GetRolesAsync(user);
-            foreach (var role in roles)
+            var userRoles = await _userManager.GetRolesAsync(user);
+            foreach (var role in userRoles)
             {
-                claims.Add(new Claim(ClaimTypes.Role, role)); // Add each role as a claim
+                claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            // Generate a security key using the JWT secret key from configuration
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-            // Create signing credentials using the security key and HMAC-SHA512 algorithm
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
-            // Create a token descriptor that contains claims, expiration time, and signing credentials
+            var expires = DateTime.UtcNow.AddDays(1);
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(claims), // Set the claims for the token
-                Expires = DateTime.Now.AddDays(1), // Set the token expiration time (1 day)
+                Subject = new ClaimsIdentity(claims),
+                Expires = expires,
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"],
-                SigningCredentials = creds // Set the signing credentials for the token
+                SigningCredentials = creds
             };
 
-            // Create a token handler to generate the JWT token
             var tokenHandler = new JwtSecurityTokenHandler();
-            var token = tokenHandler.CreateToken(tokenDescriptor);// Create the token using the descriptor
+            var token = tokenHandler.CreateToken(tokenDescriptor);
 
-            // Return the serialized JWT token as a string
             return tokenHandler.WriteToken(token);
         }
     }

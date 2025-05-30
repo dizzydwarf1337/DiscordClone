@@ -14,19 +14,13 @@ namespace DiscordClone.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        // UserManager is used to manage user-related actions like creating, finding users, etc.
         private readonly UserManager<User> _userManager;
-        // SignInManager is used to handle user sign-in operations.
         private readonly SignInManager<User> _signInManager;
-        // Configuration is used to access app settings.
         private readonly IConfiguration _configuration;
-        // Logger is used for logging information and errors.
         private readonly ILogger<AuthController> _logger;
-        // AuthService handles JWT token generation.
         private readonly IAuthService _authService;
         private readonly ApplicationContext _context;
 
-        // Constructor for dependency injection
         public AuthController(UserManager<User> userManager, SignInManager<User> signInManager, IConfiguration configuration, ILogger<AuthController> logger, IAuthService authService, ApplicationContext context)
         {
             _userManager = userManager;
@@ -40,7 +34,6 @@ namespace DiscordClone.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            // Check if the input model is valid
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Invalid model state for login attempt.");
@@ -49,51 +42,27 @@ namespace DiscordClone.Controllers
 
             try
             {
-                // Find user by username
                 var user = await _userManager.FindByNameAsync(loginDto.Username);
-                if (user == null) // If user not found
+                if (user == null)
                 {
                     _logger.LogWarning("Login failed for user {Username}: User not found", loginDto.Username);
                     return Unauthorized(new ApiResponse(false, "Invalid credentials."));
                 }
 
-                // Check if the provided password is correct
                 var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
-                if (!result.Succeeded) // If password is incorrect
+                if (!result.Succeeded)
                 {
                     _logger.LogWarning("Login failed for user {Username}: Incorrect password", loginDto.Username);
                     return Unauthorized(new ApiResponse(false, "Invalid credentials."));
                 }
 
-                // Check if the user already has a valid token in the database
-                var existingToken = _context.UserTokens.FirstOrDefault(t => t.UserId == user.Id && t.LoginProvider == "Jwt" && t.Name == "Bearer");
+                _logger.LogInformation("Login successful for user {Username}. Generating new JWT token.", loginDto.Username);
+                string token = await _authService.GenerateJwtTokenAsync(user);
+                _logger.LogInformation("New JWT token generated successfully for user {Username}", loginDto.Username);
 
-                string token;
-                if (existingToken != null) // Token exists, return it
-                {
-                    token = existingToken.Value;
-                    _logger.LogInformation("Found existing token for user {Username}", loginDto.Username);
-                }
-                else // Token doesn't exist, generate a new one
-                {
-                    token = await _authService.GenerateJwtTokenAsync(user);
-                    _logger.LogInformation("JWT token generated successfully for user {Username}", loginDto.Username);
-
-                    // Save the new token in the database
-                    _context.UserTokens.Add(new IdentityUserToken<Guid>
-                    {
-                        UserId = user.Id,
-                        LoginProvider = "Jwt",
-                        Name = "Bearer",
-                        Value = token
-                    });
-                    await _context.SaveChangesAsync();
-                }
-
-                // Return the token in the response
                 return Ok(new ApiResponse(true, "Login successful", new { token }));
             }
-            catch (Exception ex) // Handle any exceptions
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while processing login for user {Username}", loginDto.Username);
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));

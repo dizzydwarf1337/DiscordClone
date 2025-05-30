@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default observer(function PrivateMessageTextField({ onSend }: Props) {
-    const { signalRStore, userStore } = useStore();
+    const { chatSignalRStore, userStore } = useStore();
     const [content, setContent] = useState("");
     const { friendId } = useParams();
     
@@ -20,7 +20,7 @@ export default observer(function PrivateMessageTextField({ onSend }: Props) {
         setContent(e.target.value);
     };
 
-    useEffect(() => { }, [signalRStore]);
+    useEffect(() => { }, [chatSignalRStore]);
 
     const handleSend = async () => {
         if (!content.trim()) return;
@@ -34,10 +34,9 @@ export default observer(function PrivateMessageTextField({ onSend }: Props) {
         };
         
         try {
-            await signalRStore.sendPrivateMessage(message);
+            await chatSignalRStore.sendPrivateMessage(message);
             setContent("");
             
-            // Call the onSend callback if provided
             if (onSend) {
                 onSend();
             }

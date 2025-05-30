@@ -15,3 +15,4 @@ namespace DiscordClone.Models.Dtos
     public string ReactionType { get; set; } = null!;
     }
 }
+

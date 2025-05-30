@@ -7,59 +7,70 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AdminPanel from '../../features/Admin/AdminPanel';
 import { ThemeProvider } from '@emotion/react';
 import theme from '../theme/theme';
-import { Box, Button } from '@mui/material';
+import { Box } from '@mui/material';
 import SideBar from './sideBar';
 import IncomingCallModal from '../../features/User/calls/private/incomingCallModal';
 import { observer } from "mobx-react-lite";
-export default observer (function App() {
 
+export default observer(function App() {
     const location = useLocation();
-    const { userStore, signalRStore } = useStore();
-    const navigate = useNavigate();
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const { userStore, chatSignalRStore, voiceSignalRStore } = useStore();
+    const navigate = useNavigate(); 
+
+    const globalRemoteAudioContainerRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
-        if (audioRef.current) {
-            signalRStore.setAudioElement(audioRef.current);
-            console.log(audioRef);
+        if (globalRemoteAudioContainerRef.current) {
+            voiceSignalRStore.setRemoteAudioContainer(globalRemoteAudioContainerRef.current);
         }
-    }, [audioRef.current,signalRStore]);
-    useEffect(() => {
-        if (location.pathname === '/main' && !userStore.getLoggedIn()) {
-            navigate('/login');
-        }
-    }, [location.pathname, userStore, navigate]);
+    }, [voiceSignalRStore]);
 
     return (
         <ThemeProvider theme={theme}>
-        <>
-            {location.pathname === '/' ? <HomePage /> : (
-                <>
-                    {location.pathname !== '/login' ? (
-                        <>
-                            {userStore.user?.role === 'Admin' ? (
-                                <AdminPanel />
+            <>
+                {location.pathname === '/' ? <HomePage /> : (
+                    <>
+                        {location.pathname !== '/login' ? (
+                            <>
+                                {userStore.user?.role === 'Admin' ? (
+                                    <AdminPanel />
                                 ) : (
-                                <>
-                                    <Box>
-                                        <NavBar />
-                                    </Box>
-                                    <Box>
-                                        <SideBar />
-                                            </Box>
-                                     <Box pl="62px" mt="62px">
-                                        <Outlet />
-                                    </Box>
-                                </>
-                            )}
-                        </>
-                    ) : (
-                        <Outlet />
-                    )}
-                </>
+                                    <>
+                                        <Box> {/* Container for NavBar */}
+                                            <NavBar />
+                                        </Box>
+                                        <Box> {/* Container for SideBar */}
+                                            <SideBar />
+                                        </Box>
+                                        <Box
+                                            sx={{
+                                                position: 'absolute',
+                                                top: '48px',
+                                                left: '72px',      
+                                                height: 'calc(100vh - 48px)', 
+                                                width: 'calc(100vw - 72px)',
+                                                display: 'flex',
+                                            }}
+                                        >
+                                            <Outlet /> {/* Renders ChannelDashboard */}
+                                        </Box>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <Outlet />
+                        )}
+                    </>
                 )}
-                {signalRStore.currentCall && <IncomingCallModal />}
 
-                <audio  ref={audioRef} autoPlay controls style={{ margin: "100px" }} />
+                {/* Global hidden container for ALL remote audio elements */}
+                <div ref={globalRemoteAudioContainerRef} style={{ display: 'none' }} id="global-audio-container"></div>
+
+                {/* Incoming Call Modal */}
+                {voiceSignalRStore.isRinging &&
+                    voiceSignalRStore.currentCallInfo &&
+                    !voiceSignalRStore.currentCallInfo.isInitiator &&
+                    <IncomingCallModal />}
             </>
         </ThemeProvider>
     );
