@@ -59,7 +59,7 @@ export default function HomePage() {
                         padding: { xs: '10px 20px', md: '12px 32px' },
                         borderRadius: '3px',
                         textTransform: 'none',
-                        minWidth: '200px',
+                        minWidth: '240px',
                         '&:hover': {
                             bgcolor: '#4752c4',
                         }

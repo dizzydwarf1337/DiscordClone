@@ -100,22 +100,35 @@ export default observer(function ChannelDashboard() {
     const getAvatarProps = (user: AvatarUserType | undefined | null) => {
         const name = user?.username || "User";
 
+        const baseAvatarStyles = {
+            width: 30,
+            height: 30,
+            fontSize: '0.65rem',
+            mr: 0.8
+        };
+
         if (!user || !user.id) {
             return {
-                sx: { bgcolor: '#7289da' },
+                sx: { ...baseAvatarStyles, bgcolor: '#7289da' },
                 children: getAvatarLetter(name),
             };
         }
 
         if (user.image && typeof user.image === 'string') {
-            const imageUrl = (user.image.startsWith('http') || user.image.startsWith('blob:')) ? user.image : `http://localhost:5000${user.image.startsWith('/') ? '' : '/'}${user.image}`;
-            return { src: imageUrl };
-        } else {
+            const imageUrl = (user.image.startsWith('http') || user.image.startsWith('blob:'))
+                ? user.image
+                : `http://localhost:5000${user.image.startsWith('/') ? '' : '/'}${user.image}`;
+
             return {
-                sx: { bgcolor: stringToColor(user.id) },
-                children: getAvatarLetter(name),
+                src: imageUrl,
+                sx: baseAvatarStyles
             };
         }
+
+        return {
+            sx: { ...baseAvatarStyles, bgcolor: stringToColor(user.id) },
+            children: getAvatarLetter(name),
+        };
     };
 
     const actualCurrentVoiceChannelObject = channelStore.channels.find(c => c.channelId === voiceSignalRStore.currentVoiceChannelId);
