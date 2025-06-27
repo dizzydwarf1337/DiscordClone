@@ -9,7 +9,7 @@ import agent from "../../../app/API/agent";
 
 
 export default observer(function MessageTextField() {
-    const { userStore, signalRStore } = useStore();
+    const { userStore, chatSignalRStore } = useStore();
     const { serverId, channelIdParam } = useParams();
     const [message, setMessage] = useState("");
     const [files, setFiles] = useState<FileList | null>(null);
@@ -21,7 +21,7 @@ export default observer(function MessageTextField() {
 
         try {
             if (files && files.length > 0) {
-                const newMessage = await signalRStore.sendMessageWithAttachments(
+                const newMessage = await chatSignalRStore.sendMessageWithAttachments(
                     message,
                     channelIdParam!,
                     userStore.user?.id!,
@@ -29,9 +29,8 @@ export default observer(function MessageTextField() {
                 );
 
                 if (newMessage) {
-                    // Dodaj now¹ wiadomoœæ do stanu
-                    const currentMessages = signalRStore.messages.get(channelIdParam!) || [];
-                    signalRStore.messages.set(channelIdParam!, [...currentMessages, newMessage]);
+                    const currentMessages = chatSignalRStore.messages.get(channelIdParam!) || [];
+                    chatSignalRStore.messages.set(channelIdParam!, [...currentMessages, newMessage]);
                 }
 
             } else {
@@ -45,12 +44,10 @@ export default observer(function MessageTextField() {
                     reaction: "",
                 };
 
-                await signalRStore.sendMessage(messageDto, channelIdParam!, serverId!);
+                await chatSignalRStore.sendMessage(messageDto, channelIdParam!, serverId!);
             }
 
       
-
-            // Clear the form
             setMessage("");
             setFiles(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
@@ -118,9 +115,32 @@ export default observer(function MessageTextField() {
     };
 
     return (
-        <Box display="flex" alignItems="center" gap={1}>
-            <IconButton onClick={triggerFileInput} sx={{ color: 'gray' }}>
-                <AttachFileIcon />
+        <Box
+            display="flex"
+            alignItems="center"
+            gap={1.5}
+            sx={{
+                backgroundColor: '#40444b',
+                borderRadius: '8px',
+                p: '0px 10px',
+                minHeight: '44px',
+                boxSizing: 'border-box'
+            }}
+        >
+            <IconButton
+                onClick={triggerFileInput}
+                size="medium"
+                sx={{
+                    color: '#b9bbbe',
+                    p: '8px',
+                    '&:hover': {
+                        color: '#dcddde',
+                        backgroundColor: 'transparent'
+                    }
+                }}
+                title="Attach files"
+            >
+                <AttachFileIcon sx={{ fontSize: '24px' }} />
             </IconButton>
             <input
                 type="file"
@@ -130,12 +150,14 @@ export default observer(function MessageTextField() {
                 multiple
             />
             {files && files.length > 0 && (
-                <Box sx={{ color: 'gray', fontSize: '0.8rem' }}>
-                    {files.length} file(s) selected
+                <Box sx={{ color: '#b9bbbe', fontSize: '0.875rem', mr: 1, whiteSpace: 'nowrap' }}>
+                    {files.length} file{files.length > 1 ? 's' : ''} selected
                 </Box>
             )}
             <TextField
                 fullWidth
+                multiline
+                maxRows={5}
                 placeholder="Type your message..."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -145,16 +167,42 @@ export default observer(function MessageTextField() {
                         handleSubmit();
                     }
                 }}
-                sx={{
-                    '& .MuiOutlinedInput-root': {
-                        borderRadius: '15px',
-                        backgroundColor: '#2A2A2A',
-                        color: 'white',
+                variant="standard"
+                InputProps={{
+                    disableUnderline: true,
+                    sx: {
+                        color: '#dcddde',
+                        fontSize: '0.9375rem',
+                        lineHeight: '1.375rem',
+                        py: '9px',
+                        pr: '0px'
                     }
                 }}
+                sx={{
+                    flexGrow: 1,
+                    '& .MuiInputBase-root': {
+                        padding: 0,
+                    },
+                }}
             />
-            <IconButton onClick={handleSubmit} sx={{ color: message || (files && files.length > 0) ? 'primary.main' : 'gray' }}>
-                <SendIcon />
+            <IconButton
+                onClick={handleSubmit}
+                disabled={(!message || message.trim() === '') && (!files || files.length === 0)}
+                size="medium"
+                sx={{
+                    color: (message.trim() || (files && files.length > 0)) ? '#b9bbbe' : '#72767d',
+                    p: '8px',
+                    '&:hover': {
+                        color: (message.trim() || (files && files.length > 0)) ? '#5865f2' : '#8e9297',
+                        backgroundColor: 'transparent'
+                    },
+                    '&.Mui-disabled': {
+                        color: '#4f545c'
+                    }
+                }}
+                title="Send message"
+            >
+                <SendIcon sx={{ fontSize: '24px' }} />
             </IconButton>
         </Box>
     );

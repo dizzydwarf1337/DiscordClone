@@ -15,7 +15,6 @@ namespace DiscordClone.Services.ServerOperations
         Task<Result<string>> DeleteChannelByIdAsync(Guid Id, Guid userId);
         Task<Result<ChannelDto>> GetChannelByIdAsync(Guid channelId);
         Task<Result<ICollection<ChannelDto>>> GetChannelsByServerIdAsync(Guid serverId);
-        Task<Result<string>> JoinChannelAsync(string groupName);
         Task<Result<ICollection<String>>> GetUserChannelsGroupNameByUserIdAsync(Guid userId);
     }
 
@@ -23,14 +22,13 @@ namespace DiscordClone.Services.ServerOperations
     {
         private readonly ApplicationContext _context;
         private readonly IHubContext<ChatHub> _hubContext;
-        private readonly ChatHub _chatHub;
 
-        public ChannelOperationsService(ApplicationContext context, IHubContext<ChatHub> hubContext, ChatHub chatHub)
+        public ChannelOperationsService(ApplicationContext context, IHubContext<ChatHub> hubContext)
         {
             _context = context;
             _hubContext = hubContext;
-            _chatHub = chatHub;
         }
+
         public async Task<Result<ChannelDto>> GetChannelByIdAsync(Guid channelId)
         {
             var channel = await _context.Channels.FindAsync(channelId);
@@ -48,6 +46,7 @@ namespace DiscordClone.Services.ServerOperations
             };
             return Result<ChannelDto>.Success(channelDto);
         }
+
         public async Task<Result<ChannelDto>> CreateChannelAsync(ChannelCreateDto channelDto, Guid userId)
         {
             var server = await _context.Servers.FindAsync(channelDto.ServerId);
@@ -91,7 +90,6 @@ namespace DiscordClone.Services.ServerOperations
                 return Result<string>.Failure("Channel not found");
             }
 
-
             _context.Channels.Remove(channel);
             await _context.SaveChangesAsync();
 
@@ -120,7 +118,11 @@ namespace DiscordClone.Services.ServerOperations
 
         public async Task<Result<ICollection<ChannelDto>>> GetChannelsByServerIdAsync(Guid serverId)
         {
-            var server = await _context.Servers.FindAsync(serverId) ?? throw new Exception("Server Not Found");
+            var server = await _context.Servers.FindAsync(serverId);
+            if (server == null)
+            {
+                return Result<ICollection<ChannelDto>>.Failure("Server Not Found");
+            }
             var channels = await _context.Channels
                 .Where(c => c.ServerId == serverId)
                 .ToListAsync();
@@ -133,19 +135,7 @@ namespace DiscordClone.Services.ServerOperations
                 CreatedAt = c.CreatedAt
             }).ToList());
         }
-        public async Task<Result<string>> JoinChannelAsync(string groupName)
-        {
-            try
-            {
-                await _chatHub.JoinChannel(groupName);
-                return Result<string>.Success("Joined channel successfully!");
-            }
-            catch (Exception e)
-            {
-                return Result<string>.Failure(e.Message);
 
-            }
-        }
 
         public async Task<Result<ICollection<string>>> GetUserChannelsGroupNameByUserIdAsync(Guid userId)
         {

@@ -1,4 +1,3 @@
-
 import { HubConnection, HubConnectionBuilder, LogLevel } from "@microsoft/signalr";
 import { action, makeAutoObservable, runInAction } from "mobx";
 import Message from "../Models/message";
@@ -12,7 +11,7 @@ import { MarkAsReadDto } from "../Models/MarkAsReadDto";
 const MAX_RETRY_ATTEMPTS = 5;
 const RECONNECT_DELAY = 5000;
 
-export default class SignalRStore {
+export default class chatSignalRStore {
     connection: HubConnection | null = null;
     messages = new Map<string, Message[]>();
     privateMessages = new Map<string, PrivateMessage[]>();
@@ -25,14 +24,6 @@ export default class SignalRStore {
     friendStore: FriendStore;
     unreadPrivateMessages = new Map<string, number>();
     unreadGroupMessages = new Map<string, number>();
-    currentCall: { callerId: string; targetId: string } | null = null;
-    isInCall: boolean = false;
-    peerConnection: RTCPeerConnection | null = null;
-    iceCandidateBuffer: RTCIceCandidate[] = [];
-    localStream: MediaStream | null = null;
-    remoteStream: MediaStream | null = null;
-    isRinging: boolean = false;
-    audioElement: HTMLAudioElement | null = null;
     refreshChannelMessages = 0;
 
     constructor(friendStore: FriendStore) {
@@ -154,54 +145,6 @@ export default class SignalRStore {
         this.connection.on("ReceivePrivateMessage", this.handleReceivePrivateMessage);
         this.connection.on("ReceiveGroupMessage", this.handleReceiveGroupMessage);
         this.connection.on("ReceiveNotification", this.handleReceiveNotification);
-        this.connection.on("ReceiveCall", (callUserDto) => {
-            console.log("ReceiveCall triggered:", callUserDto);
-            runInAction(() => {
-                this.currentCall = { callerId: callUserDto.callerId, targetId: callUserDto.targetId };
-            });
-            console.log("Updated currentCall:", this.currentCall);
-        });
-        this.connection.on("CallAccepted", (callerId) => {
-            console.log("Call accepted by:", callerId);
-            runInAction(() => {
-                this.isInCall = true;
-            });
-        });
-
-        this.connection.on("CallDeclined", (callerId) => {
-            console.log("Call declined by:", callerId);
-            runInAction(() => {
-                this.currentCall = null;
-                this.isRinging = false; 
-            });
-        });
-
-        this.connection.on("CallEnded", (callerId) => {
-            console.log("Call ended by:", callerId);
-            if (this.currentCall) {
-                runInAction(() => {
-                    this.currentCall = null;
-                    this.isInCall = false;
-                    this.isRinging = false;
-                });
-
-                if (this.peerConnection) {
-                    this.peerConnection.close();
-                    this.peerConnection = null;
-                }
-
-                this.localStream?.getTracks().forEach((track) => track.stop());
-                this.localStream = null;
-                this.remoteStream = null;
-
-                console.log("Call ended");
-            } else {
-                console.log("No active call to end.");
-            }
-        });
-
-        this.connection.on("ReceiveSDP", this.handleReceiveSDP);
-        this.connection.on("ReceiveIceCandidate", this.handleReceiveIceCandidate);
     }
 
     stopConnection = async () => {
@@ -262,7 +205,7 @@ export default class SignalRStore {
             return;
         }
         try {
-            console.log("sending: " ,message)
+            console.log("sending: ", message)
             await agent.Messages.SendGroupMessage(message);
             console.log("Message sent");
         } catch (error) {
@@ -343,7 +286,7 @@ export default class SignalRStore {
         try {
             const friendGroups = await this.friendStore.getFriendGroupsByUserId(userId);
             runInAction(() => {
-            this.friendStore.setFriendGroups(friendGroups);
+                this.friendStore.setFriendGroups(friendGroups);
             });
             console.log("Friend store refreshed with new friend groups");
         } catch (error) {
@@ -376,8 +319,8 @@ export default class SignalRStore {
             case "NewPrivateMessage":
                 const privateMsg = notification.payload.messageDto;
                 const key = [privateMsg.senderId, privateMsg.receiverId].sort().join("-");
-                if (!window.location.pathname.includes(`/main/friend/${privateMsg.receiverId}`) && 
-                !window.location.pathname.includes(`/main/friend/${privateMsg.senderId}`)) {
+                if (!window.location.pathname.includes(`/main/friend/${privateMsg.receiverId}`) &&
+                    !window.location.pathname.includes(`/main/friend/${privateMsg.senderId}`)) {
                     runInAction(() => {
                         const currentUnread = this.unreadPrivateMessages.get(key) || 0;
                         this.unreadPrivateMessages.set(key, currentUnread + 1);
@@ -401,7 +344,7 @@ export default class SignalRStore {
             case "KickedFromGroup":
                 console.log("❌ You were kicked from the group:", notification.payload.groupId);
                 if (typeof notification.payload === 'object' && notification.payload !== null && 'groupId' in notification.payload) {
-                    const groupId = notification.payload.groupId;        
+                    const groupId = notification.payload.groupId;
 
                     this.refreshFriendGroups();
                     if (window.location.pathname.includes(`/main/group/${groupId}`)) {
@@ -409,7 +352,7 @@ export default class SignalRStore {
                     }
                 }
                 break;
-           case "ReceivedFriendRequest":
+            case "ReceivedFriendRequest":
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const friendRequests = await this.friendStore.GetUserFriendRequestsById(user.id);
                 console.log("Friend requests:", friendRequests);
@@ -422,7 +365,7 @@ export default class SignalRStore {
                 break;
             case "FriendRemoved":
                 if (window.location.pathname.includes(`/main/friend/${notification.payload.removedId}`)
-                     || window.location.pathname.includes(`/main/friend/${notification.payload.removedFriendId}`)) {
+                    || window.location.pathname.includes(`/main/friend/${notification.payload.removedFriendId}`)) {
                     window.location.href = "/main";
                 }
                 await this.refreshFriends();
@@ -433,7 +376,7 @@ export default class SignalRStore {
         }
     };
 
-      sendMessageWithAttachments = async (content: string, channelId: string, senderId: string, files: FileList | null): Promise<Message | null> => {
+    sendMessageWithAttachments = async (content: string, channelId: string, senderId: string, files: FileList | null): Promise<Message | null> => {
         if (!this.connection) {
             console.error("Not connected");
             return null;
@@ -486,31 +429,31 @@ export default class SignalRStore {
     markMessagesAsRead = async (type: 'private' | 'group', id: string) => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const userId = user.id;
-    
+
         if (!userId) {
             console.error("User ID not found");
             return;
         }
-    
+
         try {
             let dto: MarkAsReadDto;
-            
+
             if (type === 'private') {
                 dto = {
                     userId: userId,
-                    friendId: id, 
-                    groupId: undefined 
+                    friendId: id,
+                    groupId: undefined
                 };
             } else {
                 dto = {
                     userId: userId,
                     groupId: id,
-                    friendId: undefined 
+                    friendId: undefined
                 };
             }
-    
+
             console.log("Sending DTO:", JSON.stringify(dto, null, 2));
-            
+
             if (type === 'private') {
                 await agent.Messages.MarkPrivateMessagesAsRead(dto);
                 runInAction(() => {
@@ -530,251 +473,5 @@ export default class SignalRStore {
     clearMessages = () => {
         this.messages.clear();
     };
-    makeCall = async (targetId: string) => {
-        if (!this.connection) {
-            console.error("SignalR connection not established");
-            return;
-        }
-
-        try {
-            // Устанавливаем текущий звонок
-            let user = localStorage.getItem("user");
-            let callerId = JSON.parse(user || "{}").id;
-
-            runInAction(() => {
-                this.currentCall = { callerId, targetId };
-                this.isRinging = true;
-            });
-
-            // Создаём peerConnection
-            this.peerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-            });
-
-            // Обработчик ICE кандидатов
-            this.peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    console.log("ICE Candidate:", event.candidate);
-                    this.connection?.invoke("SendIceCandidate", targetId, JSON.stringify(event.candidate));
-                }
-            };
-
-            // Обработчик добавления удалённого потока
-            this.peerConnection.ontrack = (event) => {
-                console.log("ontrack triggered", event);
-                if (!this.remoteStream) {
-                    this.remoteStream = new MediaStream();
-                }
-                this.remoteStream.addTrack(event.track);
-                console.log("Remote track added:", event.track);
-                this.attachRemoteStreamToAudio();
-            };
-
-            // Запрашиваем доступ к микрофону
-            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            console.log("localStream tracks:", this.localStream.getTracks());
-
-            // Добавляем треки в peerConnection
-            this.localStream.getTracks().forEach((track) => {
-                console.log("Adding local track:", track);
-                this.peerConnection?.addTrack(track, this.localStream!);
-            });
-
-            // Создаём SDP offer
-            const offer = await this.peerConnection.createOffer();
-            console.log("SDP Offer:", offer);
-            await this.peerConnection.setLocalDescription(offer);
-
-            await this.connection.invoke("SendSDP", targetId, JSON.stringify(offer));
-            console.log("SDP Offer sent", JSON.stringify(offer));
-
-            // Отправляем запрос на звонок через SignalR
-            await this.connection.invoke("CallUser", {
-                CallerId: callerId,
-                TargetId: targetId,
-            });
-
-            console.log("Call initiated");
-        } catch (error) {
-            console.error("Error making call:", error);
-        }
-    };
-
-    acceptCall = async (callerId: string) => {
-        if (!this.connection) {
-            console.error("SignalR connection not established");
-            return;
-        }
-
-        try {
-            // Создаём peerConnection
-            this.peerConnection = new RTCPeerConnection({
-                iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-            });
-
-            // Обработчик ICE кандидатов
-            this.peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    console.log("ICE Candidate:", event.candidate);
-                    this.connection?.invoke("SendIceCandidate", callerId, JSON.stringify(event.candidate));
-                }
-            };
-
-            // Обработчик добавления удалённого потока
-            this.peerConnection.ontrack = (event) => {
-                console.log("ontrack triggered", event);
-                if (!this.remoteStream) {
-                    this.remoteStream = new MediaStream();
-                }
-                this.remoteStream.addTrack(event.track);
-                console.log("Remote track added:", event.track);
-                console.log("remoteStream tracks:", this.remoteStream.getTracks());
-                this.attachRemoteStreamToAudio();
-            };
-
-            this.peerConnection.onconnectionstatechange = () => {
-                console.log("ICE connection state:", this.peerConnection?.connectionState);
-            };
-            console.log("remoteStream audio tracks:", this.remoteStream?.getAudioTracks());
-
-            // Запрашиваем доступ к микрофону
-            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            console.log("localStream tracks:", this.localStream.getTracks());
-
-            // Добавляем треки в peerConnection
-            this.localStream.getTracks().forEach((track) => {
-                console.log("Adding local track:", track);
-                this.peerConnection?.addTrack(track, this.localStream!);
-            });
-
-            // Отправляем SDP answer
-            await this.connection.invoke("AcceptCall", callerId);
-
-            runInAction(() => {
-                this.isInCall = true;
-                this.currentCall = null;
-            });
-
-            console.log("Call accepted");
-        } catch (error) {
-            console.error("Error accepting call:", error);
-        }
-    };
-
-
-    declineCall = async (callerId: string) => {
-        if (!this.connection) {
-            console.error("SignalR connection not established");
-            return;
-        }
-
-        try {
-            await this.connection.invoke("DeclineCall", callerId);
-
-            runInAction(() => {
-                this.currentCall = null; 
-                this.isRinging = false; 
-            });
-
-            console.log("Call declined");
-        } catch (error) {
-            console.error("Error declining call:", error);
-        }
-    };
-    endCall = async (targetId: string) => {
-        if (!this.connection) {
-            console.error("SignalR connection not established");
-            return;
-        }
-
-        try {
-            await this.connection.invoke("EndCall", targetId);
-            if (this.peerConnection) {
-                this.peerConnection.close();
-                this.peerConnection = null;
-            }
-
-            this.localStream?.getTracks().forEach((track) => track.stop());
-            this.localStream = null;
-            this.remoteStream = null;
-
-            runInAction(() => {
-                this.isInCall = false;
-                this.currentCall = null;
-            });
-
-            console.log("Call ended");
-        } catch (error) {
-            console.error("Error ending call:", error);
-        }
-    };
-    handleReceiveSDP = async (sdp: string) => {
-        if (!this.peerConnection) {
-            this.peerConnection = new RTCPeerConnection();
-
-            this.peerConnection.onicecandidate = (event) => {
-                if (event.candidate) {
-                    this.connection?.invoke("SendIceCandidate", this.currentCall?.targetId || "", JSON.stringify(event.candidate));
-                }
-            };
-            this.peerConnection.ontrack = (event) => {
-                if (!this.remoteStream) {
-                    this.remoteStream = new MediaStream();
-                }
-                this.remoteStream.addTrack(event.track);
-                this.attachRemoteStreamToAudio();
-                console.log("Remote track added:", event.track);
-            };
-            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.localStream.getTracks().forEach((track) => {
-                this.peerConnection?.addTrack(track, this.localStream!);
-            });
-        }
-
-        const description = new RTCSessionDescription(JSON.parse(sdp));
-        await this.peerConnection.setRemoteDescription(description);
-        while (this.iceCandidateBuffer.length > 0) {
-            const candidate = this.iceCandidateBuffer.shift();
-            if (candidate) {
-                await this.peerConnection.addIceCandidate(candidate);
-            }
-        }
-
-        if (description.type === "offer") {
-            const answer = await this.peerConnection.createAnswer();
-            await this.peerConnection.setLocalDescription(answer);
-            await this.connection?.invoke("SendSDP", this.currentCall?.callerId || "", JSON.stringify(answer));
-        }
-    };
-
-    handleReceiveIceCandidate = async (candidate: string) => {
-        const iceCandidate = new RTCIceCandidate(JSON.parse(candidate));
-
-        if (this.peerConnection) {
-            if (this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
-                await this.peerConnection.addIceCandidate(iceCandidate);
-            } else {
-                this.iceCandidateBuffer.push(iceCandidate);
-            }
-        }
-    };
-
-    setAudioElement = (element: HTMLAudioElement) => {
-        this.audioElement = element;
-    }
-    private attachRemoteStreamToAudio() {
-        console.log("attachRemoteStreamToAudio called");
-        console.log("Audio element:", this.audioElement);
-        console.log("Remote stream:", this.remoteStream);
-
-        if (this.audioElement && this.remoteStream) {
-            this.audioElement.srcObject = this.remoteStream;
-            this.audioElement.play().catch((error) => {
-                console.error("Error playing audio:", error);
-            });
-        } else {
-            console.error("Audio element or remote stream is not available");
-        }
-    }
 
 }

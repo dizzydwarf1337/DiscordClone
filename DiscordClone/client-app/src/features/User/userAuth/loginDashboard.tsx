@@ -7,15 +7,16 @@ import { useNavigate } from "react-router-dom";
 import { useStore } from "../../../app/stores/store";
 
 const LoginDashboard = observer(function LoginDashboard() {
-    const [login, setLogin] = useState(true);
-    const [LoginRegister, setLoginRegister] = useState(true);
+    const [showLogin, setShowLogin] = useState(true);
     const { userStore } = useStore();
     const navigate = useNavigate();
+
     useEffect(() => {
         if (userStore.getLoggedIn()) {
             navigate("/main");
         }
-    }, [navigate, userStore]);
+    }, [navigate, userStore, userStore.getLoggedIn()]);
+
     return (
         <Box
             display="flex"
@@ -24,98 +25,72 @@ const LoginDashboard = observer(function LoginDashboard() {
             width="100vw"
             height="100vh"
             sx={{
-                background: "linear-gradient(135deg, #232526, #414345)",
+                backgroundColor: "#36393f",
                 color: "white",
+                overflow: 'hidden'
             }}
         >
             <Box
                 display="flex"
                 flexDirection="column"
                 alignItems="center"
-                justifyContent="center"
                 sx={{
-                    background: "linear-gradient(145deg, #1f1f1f, #333333)",
-                    borderRadius: "25px",
-                    boxShadow: "0px 8px 30px rgba(0, 0, 0, 0.7)",
-                    padding: "40px 30px",
-                    width: "350px",
-                    maxWidth: "90%",
+                    backgroundColor: "#313338",
+                    borderRadius: "5px",
+                    boxShadow: "0 8px 16px rgba(0, 0, 0, 0.24)",
+                    padding: "32px",
+                    width: "480px",
+                    maxWidth: "calc(100% - 32px)",
+                    boxSizing: 'border-box'
                 }}
             >
-                <Typography variant="h4" sx={{ mb: 4, color: "#E0E0E0", fontWeight: "bold" }}>
-                    {login ? "Welcome Back!" : "Join Us Today!"}
+                <Typography variant="h5" sx={{ mb: 1, color: "#ffffff", fontWeight: 600, textAlign: 'center' }}>
+                    {showLogin ? "Welcome back!" : "Create an account"}
                 </Typography>
+                {showLogin && (
+                    <Typography variant="body2" sx={{ mb: 3, color: "#b9bbbe", textAlign: 'center' }}>
+                        We're so excited to see you again!
+                    </Typography>
+                )}
 
-                <ButtonGroup
-                    variant="outlined"
-                    sx={{
-                        mb: 4,
-                        backgroundColor: "transparent",
-                        borderRadius: "15px",
-                        overflow: "hidden",
-                        width: "100%",
-                        border: "1px solid #4e4e4e",
-                    }}
-                >
-                    <Button
-                        sx={{
-                            flex: 1,
-                            backgroundColor: login ? "black" : "rgba(255, 255, 255, 0.2)",
-                            color: !login ? "white" : "#ddd",
-                            fontWeight: "bold",
-                            textTransform: "uppercase",
-                            border: "none",
-                            transition: "all 0.3s",
-                            '&:hover': {
-                                backgroundColor: login ? "#1565c0" : "rgba(255, 255, 255, 0.3)",
-                                boxShadow: "inset 0px 0px 10px rgba(255, 255, 255, 0.2)",
-                            },
-                        }}
-                        disabled={login}
-                        onClick={() => {
-                            setLoginRegister(true);
-                            setLogin(true);
-                        }}
-                    >
-                        Login
-                    </Button>
-                    <Button
-                        sx={{
-                            flex: 1,
-                            backgroundColor: !login ? "black" : "rgba(255, 255, 255, 0.2)",
-                            color: login ? "white" : "#ddd",
-                            fontWeight: "bold",
-                            textTransform: "uppercase",
-                            border: "none",
-                            transition: "all 0.3s",
-                            '&:hover': {
-                                backgroundColor: !login ? "#1565c0" : "rgba(255, 255, 255, 0.3)",
-                                boxShadow: "inset 0px 0px 10px rgba(255, 255, 255, 0.2)",
-                            },
-                        }}
-                        disabled={!login}
-                        onClick={() => {
-                            setLoginRegister(false);
-                            setLogin(false);
-                        }}
-                    >
-                        Register
-                    </Button>
-                </ButtonGroup>
 
                 <Box
                     display="flex"
-                    alignItems="center"
+                    flexDirection="column"
+                    alignItems="stretch"
                     justifyContent="center"
                     width="100%"
                     sx={{
-                        transition: "opacity 0.5s, transform 0.5s",
-                        opacity: LoginRegister ? 1 : 0.9,
-                        transform: LoginRegister ? "scale(1)" : "scale(0.95)",
-                        overflow: "hidden",
+
                     }}
                 >
-                    {LoginRegister ? <LoginForm /> : <RegisterForm />}
+                    {showLogin ? <LoginForm /> : <RegisterForm />}
+                </Box>
+
+                <Box sx={{ mt: 2.5, textAlign: 'center' }}>
+                    {showLogin ? (
+                        <Typography variant="caption" sx={{ color: '#72767d' }}>
+                            Need an account?{' '}
+                            <Typography
+                                component="span"
+                                onClick={() => setShowLogin(false)}
+                                sx={{ color: '#00a8fc', fontWeight: 500, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                            >
+                                Register
+                            </Typography>
+                        </Typography>
+                    ) : (
+                        <Typography variant="caption" sx={{ color: '#72767d' }}>
+                            Already have an account?{' '}
+                            <Typography
+                                component="span"
+                                onClick={() => setShowLogin(true)}
+                                sx={{ color: '#00a8fc', fontWeight: 500, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                            >
+                                Login
+                            </Typography>
+                        </Typography>
+                    )}
                 </Box>
             </Box>
         </Box>

@@ -1,10 +1,15 @@
 ﻿using DiscordClone.Db;
 using DiscordClone.Models;
-using DiscordClone.Models.Dtos;
+using DiscordClone.Models.Dtos; // Make sure this using directive is present
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.IO;
+using Microsoft.AspNetCore.Http;
 
 namespace DiscordClone.Controllers
 {
@@ -12,15 +17,11 @@ namespace DiscordClone.Controllers
     [Route("api/[controller]")]
     public class UserController : ControllerBase
     {
-        // UserManager is used to manage user-related actions like creating, finding users, etc.
         private readonly UserManager<User> _userManager;
-        // Logger is used for logging information and errors.
         private readonly ILogger<UserController> _logger;
-        // Configuration is used to access app settings.
         private readonly IConfiguration _configuration;
         private readonly ApplicationContext _context;
 
-        // Constructor for dependency injection
         public UserController(UserManager<User> userManager, ILogger<UserController> logger, IConfiguration configuration, ApplicationContext context)
         {
             _userManager = userManager;
@@ -29,46 +30,34 @@ namespace DiscordClone.Controllers
             _context = context;
         }
 
-        // Endpoint to create a new user
         [HttpPost("createUser")]
         public async Task<IActionResult> CreateUser([FromBody] RegisterDto registerDto)
         {
-            // Check if the input model is valid
             if (!ModelState.IsValid)
             {
-                return BadRequest(new ApiResponse(false, "Invalid input data."));
+                return BadRequest(new ApiResponse(false, "Invalid input data.", ModelState.SelectMany(x => x.Value.Errors).Select(e => e.ErrorMessage).ToList()));
             }
-
             try
             {
-                // Create a new user instance with the provided details
                 var user = new User
                 {
-                    UserName = registerDto.Username,  // Set the username
-                    Email = registerDto.Email, // Set the email address
-                    CreatedAt = DateTime.UtcNow // Set the creation date
+                    UserName = registerDto.Username,
+                    Email = registerDto.Email,
+                    CreatedAt = DateTime.UtcNow
                 };
-
-                // Create a new user with the provided password
                 var result = await _userManager.CreateAsync(user, registerDto.Password);
-                if (!result.Succeeded) // If user creation failed, log and return an error response
+                if (!result.Succeeded)
                 {
                     _logger.LogWarning("Failed to create user {Username}: {Errors}", registerDto.Username, string.Join(", ", result.Errors.Select(e => e.Description)));
-                    return BadRequest(new ApiResponse(false, "Failed to create user.", result.Errors));
+                    return BadRequest(new ApiResponse(false, "Failed to create user.", result.Errors.Select(e => e.Description).ToList()));
                 }
-
-                // Generate an email confirmation token for the new user
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                // Create a link for email confirmation
                 var confirmationLink = Url.Action(nameof(ConfirmEmail), "User", new { userId = user.Id, token }, Request.Scheme);
-                // Log the confirmation link (in a real scenario, you would send it via email)
-                _logger.LogInformation("Confirmation link: {ConfirmationLink}", confirmationLink);
-
-                // Add the user to the specified role
+                _logger.LogInformation("Confirmation link for {Username}: {ConfirmationLink}", user.UserName, confirmationLink);
                 await _userManager.AddToRoleAsync(user, registerDto.Role);
                 return Ok(new ApiResponse(true, "User created successfully. Please confirm your email address.", new { confirmationLink }));
             }
-            catch (Exception ex) // Handle any exceptions that occur during user creation
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while creating user {Username}", registerDto.Username);
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
@@ -76,196 +65,198 @@ namespace DiscordClone.Controllers
         }
 
         [HttpPost("username")]
-        public async Task<IActionResult> GetUserByUserName([FromBody] UserNameDto userName)
+        public async Task<IActionResult> GetUserByUserName([FromBody] UserNameDto userNameDto)
         {
             try
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userName.UserName);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserName == userNameDto.UserName);
                 if (user == null)
                 {
                     return NotFound(new ApiResponse(false, "User not found"));
                 }
-
-                var userRoleRelation = await _context.UserRoles.FirstOrDefaultAsync(r => r.UserId == user.Id);
-                if (userRoleRelation == null)
-                {
-                    return NotFound(new ApiResponse(false, "User role not found"));
-                }
-
-                var userRole = await _context.Roles.FindAsync(userRoleRelation.RoleId);
-                if (userRole == null)
-                {
-                    return NotFound(new ApiResponse(false, "Role not found"));
-                }
+                var roles = await _userManager.GetRolesAsync(user);
+                var roleName = roles.FirstOrDefault() ?? "User";
 
                 return Ok(new ApiResponse(true, "User found successfully", new UserDto
                 {
                     Email = user.Email,
                     Id = user.Id.ToString(),
                     Username = user.UserName,
-                    Role = userRole.Name,
+                    Role = roleName,
                     Image = user.AvatarUrl
                 }));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error fetching user by username {Username}", userNameDto.UserName);
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
             }
         }
 
-
-        // Endpoint to confirm a user's email address
         [HttpGet("confirmEmail")]
-        [AllowAnonymous] // Allow anyone to confirm email, no authentication required
+        [AllowAnonymous]
         public async Task<IActionResult> ConfirmEmail(string userId, string token)
         {
-            // Validate the userId and token
             if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(token))
             {
                 return BadRequest(new ApiResponse(false, "Invalid email confirmation request."));
             }
-
-            // Find the user by ID
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) // If user is not found, return an error response
+            if (user == null)
             {
                 return NotFound(new ApiResponse(false, "User not found."));
             }
-
-            // Confirm the user's email using the provided token
             var result = await _userManager.ConfirmEmailAsync(user, token);
-            if (!result.Succeeded) // If confirmation fails, return an error response
+            if (!result.Succeeded)
             {
-                return BadRequest(new ApiResponse(false, "Email confirmation failed.", result.Errors));
+                return BadRequest(new ApiResponse(false, "Email confirmation failed.", result.Errors.Select(e => e.Description).ToList()));
             }
-
             return Ok(new ApiResponse(true, "Email confirmed successfully."));
         }
 
-        // Endpoint to get user details by ID
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin,User")] // Admins and Users can get user details
+        [Authorize] // Removed specific roles to allow any authenticated user to get their own, or admin for others
         public async Task<IActionResult> GetUser(string id)
         {
+            // Optional: Add logic to check if current user is asking for their own details or if current user is admin
+            // var currentUserId = _userManager.GetUserId(User);
+            // if (currentUserId != id && !User.IsInRole("Admin")) { return Forbid(); }
             try
             {
-                // Find the user by ID
                 var user = await _userManager.FindByIdAsync(id);
-                if (user == null) // If user is not found, log and return an error response
+                if (user == null)
                 {
                     _logger.LogWarning("User not found: {UserId}", id);
                     return NotFound(new ApiResponse(false, "User not found."));
                 }
-
-                // Return user details
-                return Ok(new ApiResponse(true, "User retrieved successfully.", new UserDto { Id = user.Id.ToString(), Username = user.UserName, Email = user.Email }));
+                var roles = await _userManager.GetRolesAsync(user);
+                return Ok(new ApiResponse(true, "User retrieved successfully.", new UserDto { Id = user.Id.ToString(), Username = user.UserName, Email = user.Email, Role = roles.FirstOrDefault() ?? "User", Image = user.AvatarUrl }));
             }
-            catch (Exception ex) // Handle any exceptions that occur while retrieving user details
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while retrieving user {UserId}", id);
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
             }
         }
 
-        // Endpoint to update user details
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUser([FromBody] UserDto updateUserDto)
+        [Authorize]
+        public async Task<IActionResult> UpdateUser(string id, [FromBody] UserPartialUpdateDto partialUpdateDto)
         {
-            var id = updateUserDto.Id;
-            // Check if the input model is valid
+            var currentUserId = _userManager.GetUserId(User);
+            if (currentUserId != id && !User.IsInRole("Admin"))
+            {
+                _logger.LogWarning("User {CurrentUserId} attempted to update user {TargetUserId} without permission.", currentUserId, id);
+                return Forbid();
+            }
+
             if (!ModelState.IsValid)
             {
-                return BadRequest(new ApiResponse(false, "Invalid input data."));
+                return BadRequest(new ApiResponse(false, "Invalid input data.", ModelState.SelectMany(x => x.Value.Errors).Select(e => e.ErrorMessage).ToList()));
             }
 
             try
             {
-                // Find the user by ID
                 var user = await _userManager.FindByIdAsync(id);
-                if (user == null) // If user is not found, log and return an error response
+                if (user == null)
                 {
-                    _logger.LogWarning("User not found: {UserId}", id);
+                    _logger.LogWarning("User not found for update: {UserId}", id);
                     return NotFound(new ApiResponse(false, "User not found."));
                 }
 
-                // Update user details if provided
-                user.UserName = updateUserDto.Username ?? user.UserName;
-                user.Email = updateUserDto.Email ?? user.Email;
+                bool hasChanges = false;
 
-                // Update the user in the database
+                if (!string.IsNullOrWhiteSpace(partialUpdateDto.Username) && partialUpdateDto.Username != user.UserName)
+                {
+                    var existingUserWithNewUsername = await _userManager.FindByNameAsync(partialUpdateDto.Username);
+                    if (existingUserWithNewUsername != null && existingUserWithNewUsername.Id.ToString() != id)
+                    {
+                        return BadRequest(new ApiResponse(false, "Username already taken.", new[] { "Username already taken." }));
+                    }
+                    user.UserName = partialUpdateDto.Username;
+                    user.NormalizedUserName = _userManager.NormalizeName(partialUpdateDto.Username);
+                    hasChanges = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(partialUpdateDto.Email) && partialUpdateDto.Email != user.Email)
+                {
+                    var existingUserWithNewEmail = await _userManager.FindByEmailAsync(partialUpdateDto.Email);
+                    if (existingUserWithNewEmail != null && existingUserWithNewEmail.Id.ToString() != id)
+                    {
+                        return BadRequest(new ApiResponse(false, "Email already taken.", new[] { "Email already taken." }));
+                    }
+                    user.Email = partialUpdateDto.Email;
+                    user.NormalizedEmail = _userManager.NormalizeEmail(partialUpdateDto.Email);
+                    hasChanges = true;
+                }
+
+                if (!hasChanges)
+                {
+                    return Ok(new ApiResponse(true, "No changes detected. User not updated."));
+                }
+
                 var result = await _userManager.UpdateAsync(user);
-                if (!result.Succeeded) // If update fails, log and return an error response
+                if (!result.Succeeded)
                 {
                     _logger.LogWarning("Failed to update user {UserId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
-                    return BadRequest(new ApiResponse(false, "Failed to update user.", result.Errors));
+                    return BadRequest(new ApiResponse(false, "Failed to update user.", result.Errors.Select(e => e.Description).ToList()));
                 }
 
                 return Ok(new ApiResponse(true, "User updated successfully."));
             }
-            catch (Exception ex) // Handle any exceptions that occur during user update
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while updating user {UserId}", id);
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
             }
         }
 
-        // Endpoint to delete a user by ID
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
             try
             {
-                // Find the user by ID
                 var user = await _userManager.FindByIdAsync(id);
-                if (user == null) // If user is not found, log and return an error response
+                if (user == null)
                 {
-                    _logger.LogWarning("User not found: {UserId}", id);
+                    _logger.LogWarning("User not found for deletion: {UserId}", id);
                     return NotFound(new ApiResponse(false, "User not found."));
                 }
-
-                // Physically delete the user from the database
                 var result = await _userManager.DeleteAsync(user);
-                if (!result.Succeeded) // If delete operation fails, log and return an error response
+                if (!result.Succeeded)
                 {
                     _logger.LogWarning("Failed to delete user {UserId}: {Errors}", id, string.Join(", ", result.Errors.Select(e => e.Description)));
-                    return BadRequest(new ApiResponse(false, "Failed to delete user.", result.Errors));
+                    return BadRequest(new ApiResponse(false, "Failed to delete user.", result.Errors.Select(e => e.Description).ToList()));
                 }
-
-                _logger.LogInformation("User {UserId} deleted successfully.", id);
+                _logger.LogInformation("User {UserId} deleted successfully by admin.", id);
                 return Ok(new ApiResponse(true, "User deleted successfully."));
             }
-            catch (Exception ex) // Handle any exceptions that occur during user deletion
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while deleting user {UserId}", id);
                 return StatusCode(500, new ApiResponse(false, "An error occurred while processing your request."));
             }
         }
 
-
-
         [HttpDelete("self")]
-        [Authorize] // Każdy zalogowany użytkownik
+        [Authorize]
         public async Task<IActionResult> DeleteOwnAccount()
         {
             try
             {
-                // Znajdź aktualnie zalogowanego użytkownika
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null)
                 {
-                    _logger.LogWarning("Current user not found.");
+                    _logger.LogWarning("Current user not found for self-deletion.");
                     return NotFound(new ApiResponse(false, "User not found."));
                 }
-
-                // Usuń użytkownika z bazy danych
                 var result = await _userManager.DeleteAsync(user);
                 if (!result.Succeeded)
                 {
-                    _logger.LogWarning("Failed to delete user {UserId}: {Errors}", user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
-                    return BadRequest(new ApiResponse(false, "Failed to delete account.", result.Errors));
+                    _logger.LogWarning("Failed to delete own account for user {UserId}: {Errors}", user.Id, string.Join(", ", result.Errors.Select(e => e.Description)));
+                    return BadRequest(new ApiResponse(false, "Failed to delete account.", result.Errors.Select(e => e.Description).ToList()));
                 }
-
                 _logger.LogInformation("User {UserId} deleted their own account.", user.Id);
                 return Ok(new ApiResponse(true, "Account deleted successfully."));
             }
@@ -276,47 +267,63 @@ namespace DiscordClone.Controllers
             }
         }
 
-
-
-
         [HttpPost("update-avatar")]
-        [Authorize] // Make sure only authenticated users can upload avatars
+        [Authorize]
         public async Task<IActionResult> UpdateAvatar([FromForm] IFormFile file)
         {
             if (file == null || file.Length == 0)
             {
                 return BadRequest(new ApiResponse(false, "No file selected."));
             }
-
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return NotFound(new ApiResponse(false, "User not found"));
+            }
             try
             {
-                // Logic to save the avatar to storage
-                var user = await _userManager.GetUserAsync(User); // Get current user
-                if (user == null)
+                var avatarsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "avatars");
+                if (!Directory.Exists(avatarsPath))
                 {
-                    return NotFound(new ApiResponse(false, "User not found"));
+                    Directory.CreateDirectory(avatarsPath);
                 }
 
-                // Save file logic here (e.g., save to a directory or cloud storage)
+                if (!string.IsNullOrEmpty(user.AvatarUrl) && user.AvatarUrl.StartsWith($"{Request.Scheme}://{Request.Host}/avatars/"))
+                {
+                    var oldFileName = Path.GetFileName(new Uri(user.AvatarUrl).LocalPath);
+                    var oldFilePath = Path.Combine(avatarsPath, oldFileName);
+                    if (System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                        _logger.LogInformation("Deleted old avatar: {OldAvatarPath}", oldFilePath);
+                    }
+                }
+
                 var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "avatars", fileName);
+                var filePath = Path.Combine(avatarsPath, fileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
                 }
+                var avatarUrl = $"/avatars/{fileName}";
 
-                var avatarUrl = $"{Request.Scheme}://{Request.Host}/avatars/{fileName}"; // Full URL to the avatar
+                user.AvatarUrl = avatarUrl;
+                var result = await _userManager.UpdateAsync(user);
 
-                // Update user with new avatar URL
-                user.AvatarUrl = avatarUrl; // Assuming User model has AvatarUrl property
-                await _userManager.UpdateAsync(user);
+                if (!result.Succeeded)
+                {
+                    if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+                    _logger.LogWarning("Failed to update user model with new avatar URL for {UserId}", user.Id);
+                    return BadRequest(new ApiResponse(false, "Failed to update user avatar info.", result.Errors.Select(e => e.Description).ToList()));
+                }
 
-                return Ok(new ApiResponse(true, "Avatar updated successfully.", new { avatarUrl }));
+                var fullAvatarUrl = $"{Request.Scheme}://{Request.Host}{avatarUrl}";
+                return Ok(new ApiResponse(true, "Avatar updated successfully.", new { avatarUrl = fullAvatarUrl }));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating avatar");
+                _logger.LogError(ex, "Error updating avatar for user {UserId}", user.Id);
                 return StatusCode(500, new ApiResponse(false, "Error updating avatar"));
             }
         }

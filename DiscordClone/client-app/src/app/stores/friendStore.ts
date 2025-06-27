@@ -7,6 +7,8 @@ import PrivateMessage from "../Models/PrivateMessage";
 import { FriendGroup } from "../Models/FriendGroup";
 import { CreateGroupDto } from "../Models/CreateGroupDto";
 
+const API_BASE_URL = "http://localhost:5000";
+
 
 export default class FriendStore {
 
@@ -108,10 +110,22 @@ export default class FriendStore {
             this.setFriendLoading(false);
         }
     };
-    setFriends = (friends: User[]) => {
+
+    private enrichUserWithFullAvatarUrl = (user: User | null): User | null => {
+        if (user && user.image && !user.image.startsWith("http") && !user.image.startsWith("blob:")) {
+            return { ...user, image: `${API_BASE_URL}${user.image.startsWith('/') ? '' : '/'}${user.image}` };
+        }
+        return user;
+    };
+
+    private enrichUsersWithFullAvatarUrls = (users: User[]): User[] => {
+        return users.map(user => this.enrichUserWithFullAvatarUrl(user) as User).filter(user => user !== null);
+
+    };
+    setFriends = (friends: User[] | null) => {
         runInAction(() => {
-            this.friends = friends;
-        })
+            this.friends = friends ? this.enrichUsersWithFullAvatarUrls(friends) : [];
+        });
     }
     getFriends = () => this.friends;
     setFriendsRequests = (friendRequests: FriendRequest[]) => {
